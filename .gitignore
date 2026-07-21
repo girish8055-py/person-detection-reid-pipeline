@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary outputs & uploaded videos
+*.mp4
+*.MP4
+*.csv
+*.zip
+ml_pipeline/app/uploads/
+ml_pipeline/app/outputs/
+ml_pipeline/app/outputs*/
+
+# Temporary docs versions
+Person_Detection_ReID_Pipeline_Documentation_v*.docx
+AeroMegh_IDMS_Complete_System_Documentation_v*.docx
