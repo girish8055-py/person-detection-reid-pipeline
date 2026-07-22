@@ -23,6 +23,8 @@
 > The complete, production-ready system documentation (including ASCII directory trees, file-by-file responsibility matrix, REST API parameters, Azure SAS upload paths, and JSON payload schemas) is included directly in the repository:
 > 
 > 📥 [**Download Person_Detection_ReID_Pipeline_Documentation.docx**](Person_Detection_ReID_Pipeline_Documentation.docx)
+> 
+> 🌐 [**View AeroGCS IDMS Threat Detection API Documentation (Markdown)**](AeroGCS_IDMS_Threat_Detection_API_Documentation.md)
 
 <br/>
 

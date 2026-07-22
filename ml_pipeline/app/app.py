@@ -35,11 +35,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------- #
-# CONFIG -- adjust these paths to match your setup
-# ---------------------------------------------------------------------- #
-MODEL_PATH = r"D:\deployment_model\ml_pipeline\app\models\best.pt"
+# MODEL_PATH = r"D:\deployment_model\ml_pipeline\app\models\best.pt"
+MODEL_PATH = None
 REID_WEIGHTS_PATH = r"D:\deployment_model\ml_pipeline\app\models\osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth"
-UPLOAD_FOLDER = r"D:\deployment_model\ml_pipeline\app\uploads"
+UPLOAD_FOLDER = r"D:\deployment_model\ml_pipeline\app\upload"
 OUTPUT_ROOT = r"D:\deployment_model\ml_pipeline\app\outputs"
 MAX_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024  # 2 GB safety cap
 

@@ -14,6 +14,7 @@ to a single video/job, not the whole app.
 """
 
 import logging
+import os
 import time
 
 import cv2
@@ -36,7 +37,8 @@ class VideoProcessor:
         Loads YOLO + OSNet once. Reuse this instance across multiple videos
         so you don't pay model-loading cost per job.
         """
-        self.detector = PersonDetector(model_path=model_path, confidence=confidence)
+        self.detector = PersonDetector(model_path=model_path, confidence=confidence) if model_path else None
+        self._current_model_path = model_path
         # NOTE: identity_manager is intentionally re-created per video in
         # process_video() below -- identities (Person_001, Person_002...)
         # should not carry over between unrelated videos. Only the OSNet
@@ -45,7 +47,7 @@ class VideoProcessor:
         self.reid_weights_path = reid_weights_path
         self.target_fps = target_fps
 
-    def process_video(self, video_path: str, output_folder: str, progress_callback=None, teledata_csv_path: str = None, video_start_epoch=None):
+    def process_video(self, video_path: str, output_folder: str, progress_callback=None, teledata_csv_path: str = None, video_start_epoch=None, model_path: str = None, model_name: str = None):
         """
         Runs the full pipeline on a single video file.
 
@@ -66,6 +68,22 @@ class VideoProcessor:
         Returns:
             dict: {person_id: person_data} -- same shape as person_manager.get_persons()
         """
+        if model_path is not None:
+            if self._current_model_path != model_path:
+                logger.info("Reloading detector model from: %s", model_path)
+                confidence = self.detector.confidence if self.detector else 0.5
+                self.detector = PersonDetector(model_path=model_path, confidence=confidence)
+                self._current_model_path = model_path
+
+        if self.detector is None:
+            raise RuntimeError("No object detection model loaded. Please specify a valid model path.")
+
+        # Print the model name being used for detection
+        file_name = os.path.basename(self._current_model_path) if self._current_model_path else "default"
+        display_name = f"{model_name} ({file_name})" if model_name else file_name
+        print(f"\n[DETECTION ENGINE] Active model being used for detection: {display_name}\n")
+        logger.info("[DETECTION ENGINE] Active model being used for detection: %s", display_name)
+
         identity_manager = IdentityManager(weights_path=self.reid_weights_path)
         person_manager = PersonManager()
         json_writer = JsonWriter(output_folder=output_folder)
@@ -133,6 +151,8 @@ class VideoProcessor:
                                 det["lat"] = position["lat"]
                                 det["lon"] = position["lon"]
                                 det["alt"] = position["alt"]
+                                det["distance"] = position["distance"]
+                                det["heading"] = position["yaw"]
                                 det["detection_time"] = position["iso_time"]
 
                     detections = person_manager.update(detections, current_time)

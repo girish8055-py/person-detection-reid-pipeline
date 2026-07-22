@@ -45,6 +45,8 @@ class PersonManager:
             lat = det.get("lat")
             lon = det.get("lon")
             alt = det.get("alt")
+            distance = det.get("distance")
+            heading = det.get("heading")
             detection_time = det.get("detection_time")  # ISO string, if telemetry available
 
             # -------------------------------------------------
@@ -73,6 +75,8 @@ class PersonManager:
                     "entry_lat": lat,
                     "entry_lon": lon,
                     "entry_alt": alt,
+                    "entry_distance": distance,
+                    "entry_heading": heading,
                     "entry_detection_time": detection_time,
                 }
 
@@ -93,6 +97,8 @@ class PersonManager:
                     person["entry_lat"] = lat
                     person["entry_lon"] = lon
                     person["entry_alt"] = alt
+                    person["entry_distance"] = distance
+                    person["entry_heading"] = heading
                     person["entry_detection_time"] = detection_time
 
                 person["last_seen"] = current_time
@@ -102,6 +108,8 @@ class PersonManager:
             self.persons[person_id]["last_lat"] = lat
             self.persons[person_id]["last_lon"] = lon
             self.persons[person_id]["last_alt"] = alt
+            self.persons[person_id]["last_distance"] = distance
+            self.persons[person_id]["last_heading"] = heading
             self.persons[person_id]["last_detection_time"] = detection_time
 
         # -------------------------------------------------
@@ -131,11 +139,15 @@ class PersonManager:
                     "entry_lat": person.get("entry_lat"),
                     "entry_lon": person.get("entry_lon"),
                     "entry_alt": person.get("entry_alt"),
+                    "entry_distance": person.get("entry_distance"),
+                    "entry_heading": person.get("entry_heading"),
                     "entry_detection_time": person.get("entry_detection_time"),
 
                     "exit_lat": person.get("last_lat"),
                     "exit_lon": person.get("last_lon"),
                     "exit_alt": person.get("last_alt"),
+                    "exit_distance": person.get("last_distance"),
+                    "exit_heading": person.get("last_heading"),
                     "exit_detection_time": person.get("last_detection_time"),
 
                 })
@@ -169,11 +181,15 @@ class PersonManager:
                     "entry_lat": person.get("entry_lat"),
                     "entry_lon": person.get("entry_lon"),
                     "entry_alt": person.get("entry_alt"),
+                    "entry_distance": person.get("entry_distance"),
+                    "entry_heading": person.get("entry_heading"),
                     "entry_detection_time": person.get("entry_detection_time"),
 
                     "exit_lat": person.get("last_lat"),
                     "exit_lon": person.get("last_lon"),
                     "exit_alt": person.get("last_alt"),
+                    "exit_distance": person.get("last_distance"),
+                    "exit_heading": person.get("last_heading"),
                     "exit_detection_time": person.get("last_detection_time"),
 
                 })

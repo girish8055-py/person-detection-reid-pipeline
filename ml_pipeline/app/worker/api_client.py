@@ -23,6 +23,44 @@ HEADERS = {
 # Fetch Pending Job
 # --------------------------------------------------------
 
+def fetch_active_model_url():
+    try:
+        url = f"{BASE_URL}/models?is_active=true"
+        response = requests.get(url, timeout=30)
+        
+        if response.status_code == 204 or not response.text.strip():
+            logger.info("No active models returned from server.")
+            return None
+
+        response.raise_for_status()
+        data = response.json()
+        models = data.get("models", [])
+        
+        if models:
+            # Return the download URL and model name of the first active model
+            model = models[0]
+            download_url = model.get("download_url")
+            if not download_url and model.get("blob_url") and model.get("sas_token"):
+                # Clean up any duplicate query string markers
+                sas_token = model.get("sas_token")
+                if sas_token.startswith("?"):
+                    download_url = f"{model.get('blob_url')}{sas_token}"
+                else:
+                    download_url = f"{model.get('blob_url')}?{sas_token}"
+            return {
+                "download_url": download_url,
+                "model_name": model.get("model_name") or model.get("file_name")
+            }
+            
+    except Exception as e:
+        logger.exception("Failed to fetch active model URL: %s", e)
+    return None
+
+
+# --------------------------------------------------------
+# Fetch Pending Job
+# --------------------------------------------------------
+
 def fetch_pending_job():
     try:
         response = requests.get(PENDING_API, timeout=30)
@@ -55,6 +93,8 @@ def fetch_pending_job():
             "csv_url": task.get("csv_url"),
             "status": task["status"],
             "upload_url": task.get("upload_url") or task.get("sas_url") or task.get("azure_sas_url") or task.get("upload_sas_url"),
+            "model_url": task.get("model_url") or task.get("detection_model_url") or task.get("weights_url") or task.get("model_path"),
+            "model_name": task.get("model_name") or task.get("detection_model_name"),
         }
 
     except Exception as e:

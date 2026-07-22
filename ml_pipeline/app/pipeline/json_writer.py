@@ -1,7 +1,7 @@
 import os
 import json
 
-from pipeline.utils import format_time
+from pipeline.utils import format_time, get_cardinal_direction
 
 
 class JsonWriter:
@@ -65,6 +65,9 @@ class JsonWriter:
                         "lat": appearance.get("entry_lat"),
                         "lon": appearance.get("entry_lon"),
                         "alt": appearance.get("entry_alt"),
+                        "distance": appearance.get("entry_distance"),
+                        "heading": appearance.get("entry_heading"),
+                        "direction": get_cardinal_direction(appearance.get("entry_heading")),
                         "detection_time": appearance.get("entry_detection_time"),
                     },
 
@@ -72,6 +75,9 @@ class JsonWriter:
                         "lat": appearance.get("exit_lat"),
                         "lon": appearance.get("exit_lon"),
                         "alt": appearance.get("exit_alt"),
+                        "distance": appearance.get("exit_distance"),
+                        "heading": appearance.get("exit_heading"),
+                        "direction": get_cardinal_direction(appearance.get("exit_heading")),
                         "detection_time": appearance.get("exit_detection_time"),
                     },
 

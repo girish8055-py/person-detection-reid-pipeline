@@ -5,13 +5,14 @@ import shutil
 import threading
 import time
 
-from downloader import download_video, download_file
+from downloader import download_video, download_file, download_model
 from pipeline.telemetry import parse_video_start_epoch
 from worker.api_client import (
     fetch_pending_job,
     update_status,
     update_completed,
     update_failed,
+    fetch_active_model_url,
 )
 
 from worker.result_builder import build_result_json
@@ -119,6 +120,44 @@ def worker_loop(app_module):
                 except Exception as telemetry_err:
                     logger.warning("Failed to download or parse telemetry/flightdata: %s", telemetry_err)
 
+            # -----------------------------
+            # Download Detection Model (if URL provided or active model fetched)
+            # -----------------------------
+            model_url = job.get("model_url")
+            model_name = job.get("model_name")
+            if not model_url:
+                logger.info("No model URL in task payload. Fetching active model from server...")
+                model_info = fetch_active_model_url()
+                if model_info:
+                    model_url = model_info.get("download_url")
+                    model_name = model_info.get("model_name")
+
+            model_path = None
+            if model_url:
+                try:
+                    url_clean = model_url.split("?")[0]
+                    # Determine target local filename: use descriptive model_name if available, otherwise URL basename
+                    if model_name:
+                        safe_name = "".join([c if c.isalnum() or c in ("-", "_") else "_" for c in model_name])
+                        model_filename = f"{safe_name}.pt"
+                    else:
+                        model_filename = os.path.basename(url_clean)
+                        if not model_filename.lower().endswith(".pt"):
+                            model_filename = "custom_model.pt"
+                    
+                    target_dir = r"D:\deployment_model\ml_pipeline\app\downloaded_model"
+                    local_model_path = os.path.join(target_dir, model_filename)
+                    
+                    if os.path.exists(local_model_path):
+                        logger.info("last model is used for the detection")
+                        print("last model is used for the detection")
+                        model_path = local_model_path
+                    else:
+                        logger.info("Downloading new detection model from: %s", model_url)
+                        model_path = download_model(model_url, model_filename)
+                except Exception as model_err:
+                    logger.warning("Failed to download model: %s. Using default model.", model_err)
+
             output_folder = os.path.join(
                 app_module.OUTPUT_ROOT,
                 task_id
@@ -138,7 +177,11 @@ def worker_loop(app_module):
 
                     teledata_csv_path=csv_path,
 
-                    video_start_epoch=video_start_epoch
+                    video_start_epoch=video_start_epoch,
+
+                    model_path=model_path,
+
+                    model_name=model_name
 
                 )
 

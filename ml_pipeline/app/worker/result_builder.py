@@ -1,4 +1,4 @@
-from pipeline.utils import format_time
+from pipeline.utils import format_time, get_cardinal_direction
 
 
 def build_result_json(persons):
@@ -30,13 +30,19 @@ def build_result_json(persons):
                 "entry_location": {
                     "lat": app.get("entry_lat"),
                     "lon": app.get("entry_lon"),
-                    "alt": app.get("entry_alt")
+                    "alt": app.get("entry_alt"),
+                    "distance": app.get("entry_distance"),
+                    "heading": app.get("entry_heading"),
+                    "direction": get_cardinal_direction(app.get("entry_heading"))
                 },
 
                 "exit_location": {
                     "lat": app.get("exit_lat"),
                     "lon": app.get("exit_lon"),
-                    "alt": app.get("exit_alt")
+                    "alt": app.get("exit_alt"),
+                    "distance": app.get("exit_distance"),
+                    "heading": app.get("exit_heading"),
+                    "direction": get_cardinal_direction(app.get("exit_heading"))
                 },
 
                 # Add these later when PersonManager stores them
