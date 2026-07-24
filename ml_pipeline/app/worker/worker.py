@@ -16,6 +16,7 @@ from worker.api_client import (
 )
 
 from worker.result_builder import build_result_json
+from worker.approval_gate import check_user_permission
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,13 @@ def worker_loop(app_module):
             csv_path = None
             flightdata_path = None
             video_start_epoch = None
-            if job.get("csv_url"):
+            telemetry_data = job.get("telemetry")
+
+            if telemetry_data is not None:
+                logger.info("Using in-memory telemetry data from job payload.")
+                if job.get("flightdata"):
+                    video_start_epoch = parse_video_start_epoch(flightdata_list=job["flightdata"])
+            elif job.get("csv_url"):
                 try:
                     csv_path = download_file(
                         job["csv_url"],
@@ -116,7 +123,7 @@ def worker_loop(app_module):
                         f"{task_id}_flightdata.csv"
                     )
                     # Parse video start epoch from flightdata
-                    video_start_epoch = parse_video_start_epoch(flightdata_path)
+                    video_start_epoch = parse_video_start_epoch(flightdata_path=flightdata_path)
                 except Exception as telemetry_err:
                     logger.warning("Failed to download or parse telemetry/flightdata: %s", telemetry_err)
 
@@ -176,6 +183,8 @@ def worker_loop(app_module):
                     output_folder,
 
                     teledata_csv_path=csv_path,
+
+                    telemetry_data=telemetry_data,
 
                     video_start_epoch=video_start_epoch,
 
@@ -268,23 +277,22 @@ def worker_loop(app_module):
             # -----------------------------
 
             try:
-                update_completed(
-                    task_id,
-                    payload["results"],
-                    files=files_to_upload,
-                    file_sizes=file_sizes
-                )
+                if check_user_permission(task_id, payload["results"]):
+                    update_completed(
+                        task_id,
+                        payload["results"],
+                        files=files_to_upload,
+                        file_sizes=file_sizes
+                    )
+                    logger.info("Task %s Completed and sent to admin.", task_id)
+                else:
+                    logger.warning("Task %s completion results rejected by user. Data NOT sent.", task_id)
             finally:
                 for f in files_to_upload.values():
                     try:
                         f.close()
                     except Exception:
                         pass
-
-            logger.info(
-                "Task %s Completed",
-                task_id
-            )
 
             # -----------------------------
             # Cleanup: Delete video and CSV files after detection.

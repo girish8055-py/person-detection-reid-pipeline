@@ -86,11 +86,24 @@ def fetch_pending_job():
 
         task = tasks[0]
 
+        flight_logs = task.get("flight_logs") or []
+        telemetry = task.get("telemetry") or task.get("teledata")
+        if not telemetry and flight_logs:
+            # Extract logs of type AS_TELE_DATA
+            telemetry = [log for log in flight_logs if log.get("key") == "AS_TELE_DATA"]
+
+        flightdata = task.get("flightdata") or task.get("flight_data")
+        if not flightdata and flight_logs:
+            # Fallback to all logs so parse_video_start_epoch can scan log messages
+            flightdata = flight_logs
+
         return {
             "task_id": task["task_id"],
             "flight_id": task["flight_id"],
             "video_url": task["video_url"],
             "csv_url": task.get("csv_url"),
+            "telemetry": telemetry,
+            "flightdata": flightdata,
             "status": task["status"],
             "upload_url": task.get("upload_url") or task.get("sas_url") or task.get("azure_sas_url") or task.get("upload_sas_url"),
             "model_url": task.get("model_url") or task.get("detection_model_url") or task.get("weights_url") or task.get("model_path"),

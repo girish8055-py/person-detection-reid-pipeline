@@ -47,7 +47,7 @@ class VideoProcessor:
         self.reid_weights_path = reid_weights_path
         self.target_fps = target_fps
 
-    def process_video(self, video_path: str, output_folder: str, progress_callback=None, teledata_csv_path: str = None, video_start_epoch=None, model_path: str = None, model_name: str = None):
+    def process_video(self, video_path: str, output_folder: str, progress_callback=None, teledata_csv_path: str = None, telemetry_data: list = None, video_start_epoch=None, model_path: str = None, model_name: str = None):
         """
         Runs the full pipeline on a single video file.
 
@@ -62,6 +62,7 @@ class VideoProcessor:
                 offline_teledata_<flight_id>.csv. If given, every detection
                 gets tagged with lat/lon/alt/detection_time. If None, GPS
                 fields are simply omitted (backward compatible).
+            telemetry_data: optional in-memory telemetry data list.
             video_start_epoch: unix timestamp marking when the VIDEO started
                 recording. Passed to TelemetryReader.
 
@@ -90,12 +91,19 @@ class VideoProcessor:
         screenshot_manager = ScreenshotManager(output_folder=output_folder)
 
         telemetry_reader = None
-        if teledata_csv_path:
+        if telemetry_data is not None or teledata_csv_path:
             try:
-                telemetry_reader = TelemetryReader(teledata_csv_path, video_start_epoch=video_start_epoch)
-                logger.info("Telemetry loaded: %d GPS samples from %s", len(telemetry_reader.samples), teledata_csv_path)
+                telemetry_reader = TelemetryReader(
+                    teledata_csv_path=teledata_csv_path,
+                    telemetry_data=telemetry_data,
+                    video_start_epoch=video_start_epoch
+                )
+                if telemetry_data is not None:
+                    logger.info("Telemetry loaded: %d GPS samples from in-memory data", len(telemetry_reader.samples))
+                else:
+                    logger.info("Telemetry loaded: %d GPS samples from %s", len(telemetry_reader.samples), teledata_csv_path)
             except Exception:
-                logger.exception("Failed to load telemetry CSV %s -- continuing without GPS tagging", teledata_csv_path)
+                logger.exception("Failed to load telemetry -- continuing without GPS tagging")
                 telemetry_reader = None
 
         cap = cv2.VideoCapture(video_path)
