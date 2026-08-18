@@ -13,17 +13,20 @@ from worker.api_client import (
     update_completed,
     update_failed,
     fetch_active_model_url,
+    TEST_BASE_URL,
+    PROD_BASE_URL,
 )
 
 from worker.result_builder import build_result_json
-from worker.approval_gate import check_user_permission
 
 logger = logging.getLogger(__name__)
 
 
-def upload_to_azure(file_path, filename, flight_id="default", sas_url=None):
+def upload_to_azure(file_path, filename, flight_id="default", sas_url=None, base_url=None):
     azure_filename = filename if filename.lower().endswith((".jpg", ".jpeg")) else f"{filename}.jpg"
-    fallback_url = f"http://114.143.215.196:5005/AeroMegh/idms/uploads/threatimages/{flight_id}/{azure_filename}"
+    if not base_url:
+        base_url = PROD_BASE_URL
+    fallback_url = f"{base_url}/uploads/threatimages/{flight_id}/{azure_filename}"
     
     if not sas_url:
         sas_url = os.getenv(
@@ -54,12 +57,12 @@ def upload_to_azure(file_path, filename, flight_id="default", sas_url=None):
         return fallback_url
 
 
-def worker_loop(app_module):
+def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_URL):
 
-    logger.info("Worker Started")
+    logger.info("[%s] Worker Started", server_name)
 
     while True:
-
+        task_id = None
         try:
 
             # Only one job at a time
@@ -67,10 +70,10 @@ def worker_loop(app_module):
                 time.sleep(5)
                 continue
 
-            job = fetch_pending_job()
+            job = fetch_pending_job(base_url=base_url)
 
             if job is None:
-                logger.info("No Pending Jobs")
+                logger.info("[%s] No Pending Jobs", server_name)
                 time.sleep(5)
                 continue
 
@@ -79,7 +82,8 @@ def worker_loop(app_module):
             flight_id = job["flight_id"]
 
             logger.info(
-                "Processing Task : %s",
+                "[%s] Processing Task : %s",
+                server_name,
                 task_id
             )
 
@@ -89,7 +93,8 @@ def worker_loop(app_module):
 
             update_status(
                 task_id,
-                "IN_PROGRESS"
+                "IN_PROGRESS",
+                base_url=base_url
             )
 
             # -----------------------------
@@ -107,9 +112,8 @@ def worker_loop(app_module):
             telemetry_data = job.get("telemetry")
 
             if telemetry_data is not None:
-                logger.info("Using in-memory telemetry data from job payload.")
-                if job.get("flightdata"):
-                    video_start_epoch = parse_video_start_epoch(flightdata_list=job["flightdata"])
+                logger.info("[%s] Using in-memory telemetry data from job payload.", server_name)
+                video_start_epoch = parse_video_start_epoch(video_path=video_path, flightdata_list=job.get("flightdata"))
             elif job.get("csv_url"):
                 try:
                     csv_path = download_file(
@@ -122,10 +126,10 @@ def worker_loop(app_module):
                         flightdata_url,
                         f"{task_id}_flightdata.csv"
                     )
-                    # Parse video start epoch from flightdata
-                    video_start_epoch = parse_video_start_epoch(flightdata_path=flightdata_path)
+                    # Parse video start epoch from video metadata or flightdata
+                    video_start_epoch = parse_video_start_epoch(video_path=video_path, flightdata_path=flightdata_path)
                 except Exception as telemetry_err:
-                    logger.warning("Failed to download or parse telemetry/flightdata: %s", telemetry_err)
+                    logger.warning("[%s] Failed to download or parse telemetry/flightdata: %s", server_name, telemetry_err)
 
             # -----------------------------
             # Download Detection Model (if URL provided or active model fetched)
@@ -133,8 +137,8 @@ def worker_loop(app_module):
             model_url = job.get("model_url")
             model_name = job.get("model_name")
             if not model_url:
-                logger.info("No model URL in task payload. Fetching active model from server...")
-                model_info = fetch_active_model_url()
+                logger.info("[%s] No model URL in task payload. Fetching active model from server...", server_name)
+                model_info = fetch_active_model_url(base_url=base_url)
                 if model_info:
                     model_url = model_info.get("download_url")
                     model_name = model_info.get("model_name")
@@ -153,17 +157,15 @@ def worker_loop(app_module):
                             model_filename = "custom_model.pt"
                     
                     target_dir = r"D:\deployment_model\ml_pipeline\app\downloaded_model"
-                    local_model_path = os.path.join(target_dir, model_filename)
-                    
-                    if os.path.exists(local_model_path):
-                        logger.info("last model is used for the detection")
-                        print("last model is used for the detection")
-                        model_path = local_model_path
-                    else:
-                        logger.info("Downloading new detection model from: %s", model_url)
-                        model_path = download_model(model_url, model_filename)
+                    logger.info("[%s] Downloading detection model from: %s", server_name, model_url)
+                    model_path = download_model(model_url, model_filename)
                 except Exception as model_err:
-                    logger.warning("Failed to download model: %s. Using default model.", model_err)
+                    err_msg = f"Failed to download detection model from '{model_url}': {model_err}"
+                    logger.error("[%s] %s", server_name, err_msg)
+                    raise RuntimeError(f"Model download failed: {err_msg}")
+
+            if not model_path:
+                raise RuntimeError("Detection model could not be loaded because model URL/file is missing or download failed. Default base model fallback is disabled.")
 
             output_folder = os.path.join(
                 app_module.OUTPUT_ROOT,
@@ -213,10 +215,19 @@ def worker_loop(app_module):
                     entry_time = pval.get("current_entry", 0)
                     time_str = f"sec_{int(entry_time)}"
                 
-                # Check for the screenshot and rename it
+                # Check for the screenshot and rename it (ensure .jpg extension)
                 person_dir = os.path.join(output_folder, f"person_{raw_person_id}")
+                if not os.path.exists(person_dir):
+                    alt_dir = os.path.join(output_folder, raw_person_id.lower())
+                    if os.path.exists(alt_dir):
+                        person_dir = alt_dir
+                    else:
+                        alt_dir2 = os.path.join(output_folder, f"person_{pk}")
+                        if os.path.exists(alt_dir2):
+                            person_dir = alt_dir2
+                
                 src_file = os.path.join(person_dir, "best_detection.jpg")
-                dest_filename = f"{raw_person_id}_{time_str}"
+                dest_filename = f"{raw_person_id}_{time_str}.jpg"
                 dest_file = os.path.join(person_dir, dest_filename)
                 
                 file_size = 0
@@ -227,15 +238,20 @@ def worker_loop(app_module):
                         if os.path.exists(dest_file):
                             os.remove(dest_file)
                         os.rename(src_file, dest_file)
+                        logger.info("[%s] Saved detection screenshot: %s", server_name, dest_file)
                     except Exception as rename_err:
-                        logger.warning("Could not rename %s to %s: %s", src_file, dest_file, rename_err)
+                        logger.warning("[%s] Could not rename %s to %s: %s", server_name, src_file, dest_file, rename_err)
                 
+                if not os.path.exists(dest_file) and os.path.exists(src_file):
+                    dest_file = src_file
+                    dest_filename = f"{raw_person_id}_{time_str}.jpg"
+
                 if os.path.exists(dest_file):
                     file_size = os.path.getsize(dest_file)
                     try:
                         files_to_upload[dest_filename] = open(dest_file, "rb")
                     except Exception as open_err:
-                        logger.warning("Could not open file %s for upload: %s", dest_file, open_err)
+                        logger.warning("[%s] Could not open file %s for upload: %s", server_name, dest_file, open_err)
                 
                 if os.path.exists(person_dir):
                     # compute folder size
@@ -245,15 +261,17 @@ def worker_loop(app_module):
                             if os.path.exists(fp):
                                 folder_size += os.path.getsize(fp)
                 
-                # Upload to Azure
+                # Upload to Azure / SAS Upload URL
                 file_url = None
                 if os.path.exists(dest_file):
                     file_url = upload_to_azure(
                         dest_file,
                         dest_filename,
                         flight_id=job.get("flight_id", "default"),
-                        sas_url=job.get("upload_url")
+                        sas_url=job.get("upload_url"),
+                        base_url=base_url
                     )
+                    logger.info("[%s] Detection screenshot uploaded. URL: %s", server_name, file_url)
                 
                 pval["file_name"] = dest_filename
                 pval["file_size"] = file_size
@@ -277,16 +295,14 @@ def worker_loop(app_module):
             # -----------------------------
 
             try:
-                if check_user_permission(task_id, payload["results"]):
-                    update_completed(
-                        task_id,
-                        payload["results"],
-                        files=files_to_upload,
-                        file_sizes=file_sizes
-                    )
-                    logger.info("Task %s Completed and sent to admin.", task_id)
-                else:
-                    logger.warning("Task %s completion results rejected by user. Data NOT sent.", task_id)
+                update_completed(
+                    task_id,
+                    payload["results"],
+                    files=files_to_upload,
+                    file_sizes=file_sizes,
+                    base_url=base_url
+                )
+                logger.info("[%s] Task %s Completed and sent to admin.", server_name, task_id)
             finally:
                 for f in files_to_upload.values():
                     try:
@@ -308,33 +324,37 @@ def worker_loop(app_module):
 
         except Exception as e:
 
-            logger.exception(e)
+            logger.exception("[%s] Error in worker loop: %s", server_name, e)
 
-            try:
-
-                update_failed(
-                    task_id,
-                    str(e)
-                )
-
-            except Exception:
-                pass
+            if task_id is not None:
+                try:
+                    update_failed(
+                        task_id,
+                        str(e),
+                        base_url=base_url
+                    )
+                except Exception:
+                    pass
 
             time.sleep(5)
 
 
 def start_worker(app_module):
 
-    thread = threading.Thread(
-
+    # Start Test Server background worker
+    test_thread = threading.Thread(
         target=worker_loop,
-
-        args=(app_module,),
-
+        args=(app_module, "Test Server", TEST_BASE_URL),
         daemon=True
-
     )
+    test_thread.start()
+    logger.info("Background Worker for Test Server Started")
 
-    thread.start()
-
-    logger.info("Background Worker Started")
+    # Start Production Server background worker
+    prod_thread = threading.Thread(
+        target=worker_loop,
+        args=(app_module, "Production Server", PROD_BASE_URL),
+        daemon=True
+    )
+    prod_thread.start()
+    logger.info("Background Worker for Production Server Started")

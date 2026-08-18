@@ -4,29 +4,38 @@ import requests
 
 def download_file(url, filename):
     """
-    Downloads any file from the given URL.
+    Downloads any file from the given URL to the 'upload' folder.
 
     Returns:
         Local file path
     """
-    os.makedirs("upload", exist_ok=True)
-    dest_path = os.path.join("upload", filename)
+    dest_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "upload")
+    os.makedirs(dest_dir, exist_ok=True)
+    dest_path = os.path.join(dest_dir, filename)
 
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
+    try:
+        response = requests.get(url, stream=True, timeout=60)
+        response.raise_for_status()
 
-    with open(dest_path, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
+        with open(dest_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
 
-    print(f"Downloaded: {dest_path}")
-    return dest_path
+        print(f"Downloaded: {dest_path}")
+        return dest_path
+    except Exception as e:
+        if os.path.exists(dest_path):
+            try:
+                os.remove(dest_path)
+            except Exception:
+                pass
+        raise RuntimeError(f"Could not download file from '{url}': {e}")
 
 
 def download_video(video_url, task_id):
     """
-    Downloads the video from the given URL.
+    Downloads the video from the given URL into the 'upload' folder.
 
     Returns:
         Local video path
@@ -42,13 +51,21 @@ def download_model(url, filename):
     os.makedirs(dest_dir, exist_ok=True)
     dest_path = os.path.join(dest_dir, filename)
 
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
+    try:
+        response = requests.get(url, stream=True, timeout=30)
+        response.raise_for_status()
 
-    with open(dest_path, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
+        with open(dest_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
 
-    print(f"Downloaded model: {dest_path}")
-    return dest_path
+        print(f"Downloaded model: {dest_path}")
+        return dest_path
+    except Exception as e:
+        if os.path.exists(dest_path):
+            try:
+                os.remove(dest_path)
+            except Exception:
+                pass
+        raise RuntimeError(f"Could not download model file from '{url}': {e}")

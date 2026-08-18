@@ -11,6 +11,17 @@ Responsibilities:
 from ultralytics import YOLO
 
 
+def normalize_class(name: str) -> str:
+    if not name:
+        return "person"
+    name_lower = str(name).lower().strip()
+    if name_lower in ["person", "human", "pedestrian", "people"]:
+        return "person"
+    if name_lower in ["van", "car", "truck", "bus", "motorbike", "bicycle", "automobile"]:
+        return "vehicle"
+    return name
+
+
 class PersonDetector:
     def __init__(
         self,
@@ -62,6 +73,8 @@ class PersonDetector:
 
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
 
+                raw_class = self.model.names.get(int(box.cls.item()), "person")
+
                 detections.append(
                     {
                         "track_id": int(box.id.item()),
@@ -72,7 +85,8 @@ class PersonDetector:
                             int(y2)
                         ],
                         "confidence": float(box.conf.item()),
-                        "class_id": int(box.cls.item())
+                        "class_id": int(box.cls.item()),
+                        "class": normalize_class(raw_class)
                     }
                 )
 

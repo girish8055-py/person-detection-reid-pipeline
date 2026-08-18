@@ -42,8 +42,8 @@ class ReIDConfig:
     max_bbox_area_ratio: float = 2.5        # ignore candidates with wildly different scale
 
     # ---------------- Identity bookkeeping ----------------
-    id_prefix: str = "Person_"
-    id_padding: int = 3  # Person_001, Person_002, ...
+    id_prefix: str = ""
+    id_padding: int = 0  # e.g. 1, 2, 3, ...
 
     # ---------------- Housekeeping ----------------
     # Drop identities not seen for this long (seconds) to bound memory growth

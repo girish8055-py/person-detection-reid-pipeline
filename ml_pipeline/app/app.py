@@ -35,8 +35,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------- #
-# MODEL_PATH = r"D:\deployment_model\ml_pipeline\app\models\best.pt"
-MODEL_PATH = None
+MODEL_PATH = r"D:\deployment_model\ml_pipeline\app\models\best.pt"
 REID_WEIGHTS_PATH = r"D:\deployment_model\ml_pipeline\app\models\osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth"
 UPLOAD_FOLDER = r"D:\deployment_model\ml_pipeline\app\upload"
 OUTPUT_ROOT = r"D:\deployment_model\ml_pipeline\app\outputs"

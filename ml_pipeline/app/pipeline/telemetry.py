@@ -13,6 +13,7 @@ throws away everything else.
 """
 
 import csv
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Optional
@@ -40,8 +41,12 @@ class TelemetryReader:
 
         if video_start_epoch is not None:
             self.video_start_epoch = video_start_epoch
+            import logging
+            logging.getLogger(__name__).info("Telemetry aligned to VIDEO START timestamp (epoch: %s)", video_start_epoch)
         elif self.samples:
             self.video_start_epoch = self.samples[0][0]
+            import logging
+            logging.getLogger(__name__).info("No explicit video start event found. Telemetry defaulting to FIRST TELEMETRY SAMPLE timestamp (epoch: %s)", self.video_start_epoch)
         else:
             self.video_start_epoch = None
 
@@ -242,12 +247,51 @@ class TelemetryReader:
         return samples[-1][1], samples[-1][2], samples[-1][3], samples[-1][4], samples[-1][5], samples[-1][6]
 
 
-def parse_video_start_epoch(flightdata_path: Optional[str] = None, flightdata_list: Optional[list] = None) -> Optional[float]:
+def get_video_start_time_from_metadata(video_path: str) -> Optional[float]:
     """
-    Parses a flightdata CSV or list of events to find the video start timestamp.
-    Looks for messages containing "video" and "visible" (excluding "not visible"),
-    or containing "video start" or "start video".
+    Extracts the creation timestamp / start time from the video file container metadata.
+    Uses hachoir metadata parser if available, falling back to file modification time.
     """
+    if not video_path or not os.path.exists(video_path):
+        return None
+
+    # Try extracting creation date via hachoir
+    try:
+        from hachoir.parser import createParser
+        from hachoir.metadata import extractMetadata
+
+        parser = createParser(video_path)
+        if parser:
+            with parser:
+                metadata = extractMetadata(parser)
+                if metadata:
+                    c_date = metadata.get("creation_date")
+                    if c_date:
+                        # Avoid default 1904/1970 dummy dates
+                        if hasattr(c_date, "year") and c_date.year > 1980:
+                            # Convert datetime object to UTC timestamp
+                            if hasattr(c_date, "timestamp"):
+                                return c_date.timestamp()
+                            else:
+                                return datetime.fromisoformat(str(c_date)).timestamp()
+    except Exception as e:
+        logging.getLogger(__name__).debug("Failed to extract video metadata using hachoir: %s", e)
+
+    return None
+
+
+def parse_video_start_epoch(video_path: Optional[str] = None, flightdata_path: Optional[str] = None, flightdata_list: Optional[list] = None) -> Optional[float]:
+    """
+    Parses video metadata or flightdata CSV / event list to determine the video start timestamp.
+    Primary source: Video container creation timestamp from video_path metadata.
+    Fallback: Flight event logs (searching for camera/video start messages).
+    """
+    if video_path:
+        meta_ts = get_video_start_time_from_metadata(video_path)
+        if meta_ts is not None:
+            logging.getLogger(__name__).info("Found video start timestamp from video metadata: %s", meta_ts)
+            return meta_ts
+
     if flightdata_list is not None:
         try:
             for row in flightdata_list:
@@ -263,7 +307,8 @@ def parse_video_start_epoch(flightdata_path: Optional[str] = None, flightdata_li
                     continue
 
                 msg_lower = message.lower()
-                if "video" in msg_lower:
+                # Match various video start / recording / camera start keywords
+                if any(kw in msg_lower for kw in ["video", "camera", "record"]):
                     try:
                         if isinstance(ts_val, (int, float)):
                             ts = float(ts_val)
@@ -275,32 +320,31 @@ def parse_video_start_epoch(flightdata_path: Optional[str] = None, flightdata_li
 
                     if "visible" in msg_lower and "not" not in msg_lower:
                         return ts
-                    if "start" in msg_lower or "record" in msg_lower:
+                    if any(kw in msg_lower for kw in ["start", "record", "on", "begin"]):
                         return ts
         except Exception as e:
             print(f"Error parsing flightdata list for video start: {e}")
-        return None
 
-    if not flightdata_path or not os.path.exists(flightdata_path):
-        return None
-    try:
-        with open(flightdata_path, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            # Skip header if present
-            next(reader, None)
-            for row in reader:
-                if len(row) >= 3:
-                    ts_str, msg_type, message = row[0].strip(), row[1].strip(), row[2].strip()
-                    msg_lower = message.lower()
-                    if "video" in msg_lower:
-                        try:
-                            ts = float(ts_str) if ts_str.replace('.', '', 1).isdigit() else datetime.fromisoformat(ts_str).timestamp()
-                        except ValueError:
-                            continue
-                        if "visible" in msg_lower and "not" not in msg_lower:
-                            return ts
-                        if "start" in msg_lower or "record" in msg_lower:
-                            return ts
-    except Exception as e:
-        print(f"Error parsing flightdata CSV for video start: {e}")
+    if flightdata_path and os.path.exists(flightdata_path):
+        try:
+            with open(flightdata_path, "r", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                # Skip header if present
+                next(reader, None)
+                for row in reader:
+                    if len(row) >= 3:
+                        ts_str, msg_type, message = row[0].strip(), row[1].strip(), row[2].strip()
+                        msg_lower = message.lower()
+                        if "video" in msg_lower:
+                            try:
+                                ts = float(ts_str) if ts_str.replace('.', '', 1).isdigit() else datetime.fromisoformat(ts_str).timestamp()
+                            except ValueError:
+                                continue
+                            if "visible" in msg_lower and "not" not in msg_lower:
+                                return ts
+                            if "start" in msg_lower or "record" in msg_lower:
+                                return ts
+        except Exception as e:
+            print(f"Error parsing flightdata CSV for video start: {e}")
+
     return None

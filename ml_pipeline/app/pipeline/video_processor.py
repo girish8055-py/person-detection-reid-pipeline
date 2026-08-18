@@ -165,6 +165,12 @@ class VideoProcessor:
 
                     detections = person_manager.update(detections, current_time)
 
+                    det_info = [
+                        f"Track #{det['track_id']} ({det.get('person_id', 'N/A')}): class='{det.get('class', 'person')}' (conf={det['confidence']:.2f})"
+                        for det in detections
+                    ]
+                    print(f"[DETECTION] Frame {frame_count} @ {current_time:.2f}s | {len(detections)} detection(s): {', '.join(det_info)}")
+
                     for det in detections:
                         screenshot_manager.save_best_detection(frame, det["person_id"], det)
 
@@ -179,6 +185,17 @@ class VideoProcessor:
 
         persons = person_manager.get_persons()
         json_writer.write(persons)
+
+        print("\n" + "=" * 70)
+        print("[DETECTION OUTPUT SUMMARY]")
+        print(f"Total Unique Persons Detected: {len(persons)}")
+        for p_id, p_data in persons.items():
+            print(
+                f"  -> {p_id}: Total Duration = {p_data.get('total_duration', 0):.2f}s | "
+                f"Appearances = {len(p_data.get('appearances', []))} | "
+                f"ReID Count = {p_data.get('reidentification_count', 0)}"
+            )
+        print("=" * 70 + "\n")
 
         report(100.0, f"Done. {len(persons)} unique person(s) detected.")
         return persons

@@ -8,7 +8,11 @@ logger = logging.getLogger(__name__)
 # Server Configuration
 # --------------------------------------------------------
 
-BASE_URL = "http://114.143.215.196:5005/AeroMegh/idms"
+TEST_BASE_URL = "http://114.143.215.196:5005/AeroMegh/idms"
+PROD_BASE_URL = "https://idmsapi.aerogcs.com/AeroMegh/idms"
+
+# For backwards compatibility
+BASE_URL = PROD_BASE_URL
 PENDING_API = f"{BASE_URL}/detection/pending"
 
 # --------------------------------------------------------
@@ -23,9 +27,9 @@ HEADERS = {
 # Fetch Pending Job
 # --------------------------------------------------------
 
-def fetch_active_model_url():
+def fetch_active_model_url(base_url=PROD_BASE_URL):
     try:
-        url = f"{BASE_URL}/models?is_active=true"
+        url = f"{base_url}/models?is_active=true"
         response = requests.get(url, timeout=30)
         
         if response.status_code == 204 or not response.text.strip():
@@ -61,9 +65,10 @@ def fetch_active_model_url():
 # Fetch Pending Job
 # --------------------------------------------------------
 
-def fetch_pending_job():
+def fetch_pending_job(base_url=PROD_BASE_URL):
     try:
-        response = requests.get(PENDING_API, timeout=30)
+        pending_api = f"{base_url}/detection/pending"
+        response = requests.get(pending_api, timeout=30)
 
         print("=" * 60)
         print("Status Code:", response.status_code)
@@ -119,9 +124,9 @@ def fetch_pending_job():
 # Update Task Status
 # --------------------------------------------------------
 
-def update_status(task_id, status):
+def update_status(task_id, status, base_url=PROD_BASE_URL):
     try:
-        url = f"{BASE_URL}/detection/update/{task_id}"
+        url = f"{base_url}/detection/update/{task_id}"
 
         response = requests.put(
             url,
@@ -143,9 +148,9 @@ def update_status(task_id, status):
 # Update Completed
 # --------------------------------------------------------
 
-def update_completed(task_id, results, files=None, file_sizes=None):
+def update_completed(task_id, results, files=None, file_sizes=None, base_url=PROD_BASE_URL):
     try:
-        url = f"{BASE_URL}/detection/update/{task_id}"
+        url = f"{base_url}/detection/update/{task_id}"
 
         if files:
             try:
@@ -200,9 +205,9 @@ def update_completed(task_id, results, files=None, file_sizes=None):
 # Update Failed
 # --------------------------------------------------------
 
-def update_failed(task_id, message="Processing Failed"):
+def update_failed(task_id, message="Processing Failed", base_url=PROD_BASE_URL):
     try:
-        url = f"{BASE_URL}/detection/update/{task_id}"
+        url = f"{base_url}/detection/update/{task_id}"
 
         response = requests.put(
             url,

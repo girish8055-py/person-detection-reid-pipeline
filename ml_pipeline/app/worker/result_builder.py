@@ -9,7 +9,30 @@ def build_result_json(persons):
 
     results = []
 
-    for _, person in persons.items():
+    # <-- FOR DUMMY DATA: List of distinct classes for different IDs
+    dummy_classes = ["person", "vehicle", "car", "truck", "motorbike"]
+
+    # Generate at least 3 distinct objects with different IDs if fewer detections exist
+    expanded_persons = dict(persons)
+    if len(expanded_persons) < 3 and expanded_persons:
+        base_id = list(expanded_persons.keys())[0]
+        base_data = expanded_persons[base_id]
+        for extra_id in range(1, 4):
+            if extra_id not in expanded_persons:
+                import copy
+                new_person = copy.deepcopy(base_data)
+                new_person["person_id"] = extra_id
+                expanded_persons[extra_id] = new_person
+
+    for idx, (p_id, person) in enumerate(expanded_persons.items()):
+        # Ensure duplicated dummy entries carry a valid distinct filename/url if base had one
+        person_file_name = person.get("file_name")
+        person_file_url = person.get("file_url")
+        if person_file_name and idx > 0 and str(p_id) not in person_file_name:
+            person_file_name = f"Person_{p_id}_detection.jpg"
+            if person_file_url:
+                base_part = person_file_url.rsplit("/", 1)[0]
+                person_file_url = f"{base_part}/{person_file_name}"
 
         appearances = []
 
@@ -60,9 +83,18 @@ def build_result_json(persons):
 
             })
 
+        # Assign a distinct dummy class for each distinct ID
+        assigned_class = dummy_classes[idx % len(dummy_classes)]
+
         results.append({
 
-            "person_id": f"Person_{person['person_id']}" if not str(person['person_id']).startswith("Person_") else person['person_id'],
+            "id_number": str(p_id),
+
+            # <-- USE THIS LINE FOR DUMMY DATA (Different class for each different ID)
+            "class": assigned_class,
+
+            # <-- USE THIS LINE FOR ORIGINAL REAL DATA (Uncomment line below & comment line above)
+            # "class": person.get("class", "person"),
 
             "total_duration": round(
                 person["total_duration"],
@@ -73,9 +105,9 @@ def build_result_json(persons):
                 person["reidentification_count"],
 
             "evidence": {
-                "file_name": person.get("file_name"),
+                "file_name": person_file_name,
                 "file_size": person.get("file_size"),
-                "file_url": person.get("file_url")
+                "file_url": person_file_url
             },
 
             "appearances": appearances

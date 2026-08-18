@@ -38,6 +38,8 @@ class PersonManager:
 
             active_persons.add(person_id)
 
+            detected_class = det.get("class", "person")
+
             # -------------------------------------------------
             # First time seeing this person
             # -------------------------------------------------
@@ -47,6 +49,8 @@ class PersonManager:
                 self.persons[person_id] = {
 
                     "person_id": person_id,
+
+                    "class": detected_class,
 
                     "active": True,
 

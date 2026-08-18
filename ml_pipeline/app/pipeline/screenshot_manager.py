@@ -23,9 +23,12 @@ class ScreenshotManager:
 
         self.best_area[person_id] = area
 
+        pid_str = str(person_id)
+        folder_name = pid_str.lower() if pid_str.lower().startswith("person_") else f"person_{pid_str}"
+
         person_folder = os.path.join(
             self.output_folder,
-            f"person_{person_id}"
+            folder_name
         )
 
         os.makedirs(person_folder, exist_ok=True)

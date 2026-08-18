@@ -14,7 +14,25 @@ class JsonWriter:
 
     def write(self, persons):
 
-        for person_id, person_data in persons.items():
+        # <-- FOR DUMMY DATA: List of distinct classes for different IDs
+        dummy_classes = ["person", "vehicle", "car", "truck", "motorbike"]
+
+        # Generate at least 3 distinct objects with different IDs if fewer detections exist
+        expanded_persons = dict(persons)
+        if len(expanded_persons) < 3 and expanded_persons:
+            base_id = list(expanded_persons.keys())[0]
+            base_data = expanded_persons[base_id]
+            for extra_id in range(1, 4):
+                if extra_id not in expanded_persons:
+                    import copy
+                    new_person = copy.deepcopy(base_data)
+                    new_person["person_id"] = extra_id
+                    expanded_persons[extra_id] = new_person
+
+        for idx, (person_id, person_data) in enumerate(expanded_persons.items()):
+
+            # DUMMY CLASS TOGGLE: Cycle through dummy classes per ID
+            assigned_class = dummy_classes[idx % len(dummy_classes)]
 
             # -------------------------------------------------
             # Create Person Folder
@@ -22,7 +40,7 @@ class JsonWriter:
 
             person_folder = os.path.join(
                 self.output_folder,
-                f"person_{person_id}"
+                f"detection_{person_id}"
             )
 
             os.makedirs(person_folder, exist_ok=True)
@@ -89,8 +107,16 @@ class JsonWriter:
 
             metadata = {
 
-                "person_id":
-                    person_data["person_id"],
+                "id_number":
+                    str(person_data["person_id"]),
+
+                # <-- USE THIS LINE FOR DUMMY DATA (Different class for each different ID)
+                "class":
+                    assigned_class,
+
+                # <-- USE THIS LINE FOR ORIGINAL REAL DATA (Uncomment line below & comment line above)
+                # "class":
+                #     person_data.get("class", "person"),
 
                 "total_duration":
                     round(

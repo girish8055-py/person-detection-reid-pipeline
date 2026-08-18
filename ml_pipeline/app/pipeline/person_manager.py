@@ -16,7 +16,7 @@ telemetry loaded for this video), everything works exactly as before --
 those fields just come back None.
 """
 
-print("NEW PERSON MANAGER LOADED")
+
 from typing import Dict
 
 
@@ -48,6 +48,7 @@ class PersonManager:
             distance = det.get("distance")
             heading = det.get("heading")
             detection_time = det.get("detection_time")  # ISO string, if telemetry available
+            detected_class = det.get("class", "person")
 
             # -------------------------------------------------
             # First time seeing this person
@@ -58,6 +59,8 @@ class PersonManager:
                 self.persons[person_id] = {
 
                     "person_id": person_id,
+
+                    "class": detected_class,
 
                     "active": True,
 

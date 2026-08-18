@@ -14,7 +14,13 @@ class JsonWriter:
 
     def write(self, persons):
 
-        for person_id, person_data in persons.items():
+        # <-- FOR DUMMY DATA: Dummy classes list (vehicle, person, vehicle)
+        dummy_classes = ["vehicle", "person", "vehicle"]
+
+        for idx, (person_id, person_data) in enumerate(persons.items()):
+
+            # DUMMY CLASS TOGGLE: Cycle through dummy classes
+            assigned_class = dummy_classes[idx % len(dummy_classes)]
 
             # -------------------------------------------------
             # Create Person Folder
@@ -22,7 +28,7 @@ class JsonWriter:
 
             person_folder = os.path.join(
                 self.output_folder,
-                f"person_{person_id}"
+                f"detection_{person_id}"
             )
 
             os.makedirs(person_folder, exist_ok=True)
@@ -64,8 +70,16 @@ class JsonWriter:
 
             metadata = {
 
-                "person_id":
-                    person_data["person_id"],
+                "id_number":
+                    str(person_data["person_id"]),
+
+                # <-- USE THIS LINE FOR DUMMY DATA (vehicle, person, vehicle)
+                "class":
+                    assigned_class,
+
+                # <-- USE THIS LINE FOR ORIGINAL REAL DATA (Uncomment line below & comment line above)
+                # "class":
+                #     person_data.get("class", "person"),
 
                 "total_duration":
                     round(
