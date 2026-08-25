@@ -25,7 +25,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "models", "best.pt")
+DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "base__finetuned__Run__9_.pt")
+MODEL_PATH = DEFAULT_MODEL if os.path.exists(DEFAULT_MODEL) else os.path.join(BASE_DIR, "models", "best.pt")
 REID_WEIGHTS_PATH = os.path.join(
     BASE_DIR,
     "models",
