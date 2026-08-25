@@ -120,43 +120,57 @@ def limit_text_words(text, max_words=30):
     return truncated
 
 
-def ensure_detailed_suggested_action(act, severity_label="LOW", target_id="target", duration=0, reid_count=0):
+def ensure_detailed_suggested_action(act, severity_label="LOW", target_id="target", duration=0, reid_count=0, obj_class=None):
     """
-    Ensures suggested_action is never just a single word (e.g. 'monitor', 'track', 'alert', 'detain').
-    If act is a single word or brief phrase, expands it into a complete tactical recommendation.
+    Ensures suggested_action is never just a single word (e.g. 'MONITOR', 'TRACK', 'ALERT', 'DETAIN').
+    If act is a single word or brief phrase, expands it dynamically based on the situation context.
+    Varies based on target class (vehicle vs person), duration, re-identification count, and severity.
     Enforces a strict 30-word limit on the output.
     """
     if not act:
         act = "MONITOR"
 
     clean_act = str(act).strip()
-
-    # If it's already a sentence (> 3 words), limit to 30 words and return
     words = clean_act.split()
+
+    # If it's already a full sentence (> 3 words), cap at 30 words and return
     if len(words) > 3:
         return limit_text_words(clean_act, 30)
 
     first_word = words[0].strip(" -—:,").upper()
+    sev_upper = str(severity_label).upper() if severity_label else "LOW"
 
-    action_templates = {
-        "MONITOR": f"MONITOR — Maintain passive surveillance on Target {target_id} and log movement patterns across area.",
-        "TRACK": f"TRACK — Actively track Target {target_id} with drone sensors; observe for loitering or hostile activity.",
-        "ALERT": f"ALERT — Raise force readiness level and notify perimeter security units regarding Target {target_id}.",
-        "DETAIN": f"DETAIN — Dispatch Quick Reaction Force (QRF) to intercept and challenge Target {target_id} immediately."
-    }
+    # Context-aware target description
+    target_type = "vehicle" if ("vehicle" in str(target_id).lower() or (obj_class and "vehicle" in str(obj_class).lower())) else "target"
 
-    if first_word in action_templates:
-        res = action_templates[first_word]
+    if first_word in ("MONITOR", "TRACK", "ALERT", "DETAIN"):
+        verb = first_word
+    elif sev_upper == "CRITICAL":
+        verb = "DETAIN"
+    elif sev_upper == "HIGH":
+        verb = "ALERT"
+    elif sev_upper == "MEDIUM":
+        verb = "TRACK"
     else:
-        # Fallback template based on severity label
-        sev_upper = str(severity_label).upper() if severity_label else "LOW"
-        if sev_upper == "CRITICAL":
-            res = f"DETAIN — Critical threat level assessed for Target {target_id}. Dispatch reaction force to intercept immediately."
-        elif sev_upper == "HIGH":
-            res = f"ALERT — High priority observation on Target {target_id}. Alert field units and maintain continuous track."
-        elif sev_upper == "MEDIUM":
-            res = f"TRACK — Target {target_id} exhibits moderate activity. Continue automated tracking and log keyframes."
+        verb = "MONITOR"
+
+    if target_type == "vehicle":
+        if verb == "DETAIN" or sev_upper == "CRITICAL":
+            res = f"DETAIN — High-threat vehicle {target_id} identified. Deploy perimeter barricades and QRF team to intercept vehicle immediately."
+        elif verb == "ALERT" or sev_upper == "HIGH":
+            res = f"ALERT — Vehicle {target_id} loitering in sector for {int(duration)}s with {reid_count} re-appearances. Dispatch mobile patrol to inspect."
+        elif verb == "TRACK" or sev_upper == "MEDIUM":
+            res = f"TRACK — Vehicle {target_id} moving through operational sector. Maintain continuous sensor tracking and log route."
         else:
-            res = f"MONITOR — Routine surveillance on Target {target_id}. Maintain passive observation."
+            res = f"MONITOR — Standard vehicle {target_id} passage ({int(duration)}s). Log keyframes and maintain routine visual observation."
+    else:
+        if verb == "DETAIN" or sev_upper == "CRITICAL":
+            res = f"DETAIN — Hostile target {target_id} identified in sector. Dispatch armed reaction force to challenge and apprehend immediately."
+        elif verb == "ALERT" or sev_upper == "HIGH":
+            res = f"ALERT — Target {target_id} re-identified {reid_count} times over {int(duration)}s. Alert perimeter guards and maintain tight tracking."
+        elif verb == "TRACK" or sev_upper == "MEDIUM":
+            res = f"TRACK — Target {target_id} exhibits persistent movement in sector. Maintain automated sensor tracking and record appearance log."
+        else:
+            res = f"MONITOR — Routine target {target_id} observed for {int(duration)}s. Maintain passive surveillance and log movement."
 
     return limit_text_words(res, 30)

@@ -156,8 +156,8 @@ STEP 1 — MANDATORY WEAPON & THREAT SCAN (do this FIRST):
 - Scan for HOSTILE INDICATORS: military/tactical gear, body armour, helmets, ammunition magazines, holsters, uniformed combatants, attack formation.
 
 STEP 2 — COMMANDER'S DECISION:
-- Describe in ONE concise sentence (MAXIMUM 30 WORDS) the target's appearance (clothing, build) and activity — if a weapon is present or being fired, you MUST mention it explicitly in the description.
-- AS THE ARMY CHIEF, issue a DETAILED TACTICAL ACTION COMMAND (MAXIMUM 30 WORDS) for your troops. DO NOT RESPOND WITH A SINGLE WORD LIKE "MONITOR" OR "TRACK". Provide the action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a concise tactical instruction and justification.
+- Describe in ONE concise sentence (MAXIMUM 30 WORDS) the target's appearance (clothing, build, vehicle type) and activity — if a weapon is present or being fired, you MUST mention it explicitly in the description.
+- AS THE ARMY CHIEF, issue a UNIQUE, SITUATION-SPECIFIC TACTICAL ACTION COMMAND (MAXIMUM 30 WORDS) for your troops based on the visual evidence you observe. DO NOT COPY OR REPEAT GENERIC BOILERPLATE SENTENCES. Provide an action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a hyphen and a specific command tailored to what you see.
 - Assess ONE overall THREAT LEVEL using these NON-NEGOTIABLE rules:
     * ANY firearm visible, held, aimed, or fired  -> severity MUST be "CRITICAL". An armed subject is NEVER "LOW" or "MEDIUM". No exceptions.
     * Military/tactical gear or hostile posture without visible weapon -> at least "HIGH".
@@ -168,7 +168,7 @@ STEP 2 — COMMANDER'S DECISION:
 - If the target lingers >60s without clear purpose, treat it as potential reconnaissance of our position and raise severity accordingly.
 
 RESPOND IN VALID JSON ONLY (no markdown, no extra text):
-{{"verified_class":"{target_class}","description":"<one concise sentence description, max 30 words>","suggested_action":"<ACTION_VERB> - <tactical instruction, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
+{{"verified_class":"{target_class}","description":"<one concise specific sentence description, max 30 words>","suggested_action":"<ACTION_VERB> - <unique tactical command based on visual evidence, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
 """
 
     payload = {
@@ -212,7 +212,7 @@ RESPOND IN VALID JSON ONLY (no markdown, no extra text):
                 # as a low threat, even if the VLM misjudges it.
                 final_severity = enforce_weapon_escalation(str(desc), act, str(sev_raw).strip(), target_id)
                 sev_level, sev_label = resolve_severity(final_severity, recon_count)
-                act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count)
+                act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count, obj_class=verified_cls)
                 desc = limit_text_words(desc, 30)
                 act = limit_text_words(act, 30)
                 print(f"[VLM ENGINE] Target ID {target_id} VLM analysis complete.\n  -> Description: {desc}\n  -> Suggested Action: {act}\n  -> Severity: {sev_label}\n")
@@ -264,19 +264,30 @@ RESPOND IN VALID JSON ONLY (no markdown, no extra text):
     else:
         desc = f"{target_class.title()} {target_id} remained in a localized area between {entry_t} and {exit_t} ({duration}s)."
 
-    # Generate an actionable recommendation based on duration and re‑identifications
-    if duration > 120 or recon_count > 3:
-        act = f"ALERT — Target {target_id} persisted for {duration}s with {recon_count} re‑appearances. Recommend operator review for possible loitering."
-    elif duration > 60:
-        act = f"TRACK — Target {target_id} active for {duration}s. Continue monitoring for further activity."
-    elif recon_count > 2:
-        act = f"TRACK — Target {target_id} re‑identified {recon_count} times. Might indicate a point of interest."
+    # Generate a context-aware actionable recommendation based on class, duration, and re‑identifications
+    is_vehicle = "vehicle" in target_class.lower() or "vehicle" in str(target_id).lower()
+    if is_vehicle:
+        if duration > 120 or recon_count > 3:
+            act = f"ALERT — Vehicle {target_id} loitering in sector for {int(duration)}s across {recon_count} sightings. Dispatch mobile patrol to inspect."
+        elif duration > 60:
+            act = f"TRACK — Vehicle {target_id} active for {int(duration)}s in area. Maintain continuous optical sensor tracking."
+        elif recon_count > 2:
+            act = f"TRACK — Vehicle {target_id} re-identified {recon_count} times. Monitor movement path across sector."
+        else:
+            act = f"MONITOR — Vehicle {target_id} observed briefly for {int(duration)}s. Maintain routine passive surveillance."
     else:
-        act = f"MONITOR — Target {target_id} observed briefly ({duration}s). Standard surveillance."
+        if duration > 120 or recon_count > 3:
+            act = f"ALERT — Target {target_id} persisted for {int(duration)}s with {recon_count} re-appearances. Alert perimeter security and dispatch patrol."
+        elif duration > 60:
+            act = f"TRACK — Target {target_id} active for {int(duration)}s. Continue tracking movement across sector."
+        elif recon_count > 2:
+            act = f"TRACK — Target {target_id} re-identified {recon_count} times. Log keyframes and track position."
+        else:
+            act = f"MONITOR — Target {target_id} observed briefly ({int(duration)}s). Maintain standard surveillance."
 
     # Fallback severity based on ReID count and duration when VLM is unavailable (never null)
     sev_level, sev_label = resolve_severity(None, recon_count)
-    act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count)
+    act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count, obj_class=target_class)
     desc = limit_text_words(desc, 30)
     act = limit_text_words(act, 30)
     return desc, act, target_class, sev_label
