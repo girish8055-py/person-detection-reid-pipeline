@@ -288,6 +288,11 @@ class VideoProcessor:
                 overall_exit = appearances[-1]["exit_time"] if appearances else best_app["exit_time"]
                 best_time = (best_app["entry_time"] + best_app["exit_time"]) / 2
 
+                # Pass the target's last known bounding box so keyframes are
+                # cropped to ONLY that target — prevents VLM from describing
+                # a different object visible in the same frame.
+                target_bbox = p_data.get("last_bbox") or p_data.get("entry_bbox")
+
                 clip_path, kf_paths = extract_behavior_clip_and_keyframes(
                     video_path=video_path,
                     best_time=best_time,
@@ -295,7 +300,8 @@ class VideoProcessor:
                     output_folder=output_folder,
                     person_id=p_id,
                     entry_time=overall_entry,
-                    exit_time=overall_exit
+                    exit_time=overall_exit,
+                    target_bbox=target_bbox,
                 )
                 p_data["behavior_clip"] = clip_path
                 p_data["keyframes"] = kf_paths
@@ -407,9 +413,14 @@ class VideoProcessor:
         return persons
 
 
-def extract_behavior_clip_and_keyframes(video_path: str, best_time: float, fps: float, output_folder: str, person_id: str, entry_time: float = None, exit_time: float = None):
+def extract_behavior_clip_and_keyframes(video_path: str, best_time: float, fps: float, output_folder: str, person_id: str, entry_time: float = None, exit_time: float = None, target_bbox=None):
     """
     Extracts keyframes at entry_time, middle, and exit_time, as well as a behavior clip.
+
+    target_bbox: (x1, y1, x2, y2) bounding box of the specific target to crop into.
+        When provided, each keyframe is cropped and highlighted to ONLY show the target
+        object, preventing the VLM from describing a different object in the same scene.
+        If None, the full frame is saved (fallback for when bbox is unavailable).
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -458,20 +469,58 @@ def extract_behavior_clip_and_keyframes(video_path: str, best_time: float, fps: 
     cap.release()
     out.release()
 
+    def _crop_to_target(frame, bbox, pad_ratio=0.15):
+        """
+        Crop the frame to the specific target bounding box with padding.
+        Draws a red highlight rectangle so the VLM knows exactly which
+        object to analyse when multiple objects are present in the scene.
+        """
+        h, w = frame.shape[:2]
+        try:
+            x1, y1, x2, y2 = [int(v) for v in bbox[:4]]
+        except (TypeError, ValueError, IndexError):
+            return frame  # malformed bbox — return full frame as fallback
+
+        # Apply padding to give the VLM context around the target
+        bw = x2 - x1
+        bh = y2 - y1
+        pad_x = int(bw * pad_ratio)
+        pad_y = int(bh * pad_ratio)
+        cx1 = max(0, x1 - pad_x)
+        cy1 = max(0, y1 - pad_y)
+        cx2 = min(w, x2 + pad_x)
+        cy2 = min(h, y2 + pad_y)
+
+        cropped = frame[cy1:cy2, cx1:cx2].copy()
+
+        # Draw a red bounding box to highlight the target inside the crop
+        local_x1 = x1 - cx1
+        local_y1 = y1 - cy1
+        local_x2 = x2 - cx1
+        local_y2 = y2 - cy1
+        cv2.rectangle(cropped, (local_x1, local_y1), (local_x2, local_y2), (0, 0, 255), 3)
+
+        return cropped
+
     # Extract keyframes (entry frame, middle frame, exit frame)
     keyframe_paths = []
     if frames:
-        entry_kf_path = os.path.join(person_folder, "entry_frame.jpg")
-        cv2.imwrite(entry_kf_path, frames[0])
-        keyframe_paths.append(entry_kf_path)
-
+        kf_candidates = [frames[0]]
         if len(frames) > 2:
-            mid_kf_path = os.path.join(person_folder, "middle_frame.jpg")
-            cv2.imwrite(mid_kf_path, frames[len(frames) // 2])
-            keyframe_paths.append(mid_kf_path)
+            kf_candidates.append(frames[len(frames) // 2])
+        kf_candidates.append(frames[-1])
 
-        exit_kf_path = os.path.join(person_folder, "exit_frame.jpg")
-        cv2.imwrite(exit_kf_path, frames[-1])
-        keyframe_paths.append(exit_kf_path)
+        kf_names = ["entry_frame.jpg", "middle_frame.jpg", "exit_frame.jpg"][:len(kf_candidates)]
+
+        for kf_frame, kf_name in zip(kf_candidates, kf_names):
+            if target_bbox is not None:
+                # Crop tightly to the specific target to prevent VLM from
+                # describing another object in the same scene.
+                save_frame = _crop_to_target(kf_frame, target_bbox)
+            else:
+                save_frame = kf_frame
+            kf_path = os.path.join(person_folder, kf_name)
+            cv2.imwrite(kf_path, save_frame)
+            keyframe_paths.append(kf_path)
 
     return clip_path, keyframe_paths
