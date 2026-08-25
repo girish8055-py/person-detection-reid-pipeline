@@ -20,7 +20,7 @@ if _app_dir not in sys.path:
 
 from downloader import download_video, download_file, download_model
 from pipeline.telemetry import parse_video_start_epoch
-from pipeline.utils import get_severity_from_label, resolve_severity, ensure_detailed_suggested_action
+from pipeline.utils import get_severity_from_label, resolve_severity, ensure_detailed_suggested_action, limit_text_words
 
 try:
     from worker.api_client import (
@@ -156,8 +156,8 @@ STEP 1 — MANDATORY WEAPON & THREAT SCAN (do this FIRST):
 - Scan for HOSTILE INDICATORS: military/tactical gear, body armour, helmets, ammunition magazines, holsters, uniformed combatants, attack formation.
 
 STEP 2 — COMMANDER'S DECISION:
-- Describe in ONE concise sentence the target's appearance (clothing, build) and activity — if a weapon is present or being fired, you MUST mention it explicitly in the description.
-- AS THE ARMY CHIEF, issue a DETAILED TACTICAL ACTION COMMAND for your troops (e.g. "ALERT — Raise perimeter force readiness and dispatch patrol to monitor subject loitering near sector"). DO NOT RESPOND WITH A SINGLE WORD LIKE "MONITOR" OR "TRACK". Provide the action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a full tactical instruction and justification.
+- Describe in ONE concise sentence (MAXIMUM 30 WORDS) the target's appearance (clothing, build) and activity — if a weapon is present or being fired, you MUST mention it explicitly in the description.
+- AS THE ARMY CHIEF, issue a DETAILED TACTICAL ACTION COMMAND (MAXIMUM 30 WORDS) for your troops. DO NOT RESPOND WITH A SINGLE WORD LIKE "MONITOR" OR "TRACK". Provide the action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a concise tactical instruction and justification.
 - Assess ONE overall THREAT LEVEL using these NON-NEGOTIABLE rules:
     * ANY firearm visible, held, aimed, or fired  -> severity MUST be "CRITICAL". An armed subject is NEVER "LOW" or "MEDIUM". No exceptions.
     * Military/tactical gear or hostile posture without visible weapon -> at least "HIGH".
@@ -168,7 +168,7 @@ STEP 2 — COMMANDER'S DECISION:
 - If the target lingers >60s without clear purpose, treat it as potential reconnaissance of our position and raise severity accordingly.
 
 RESPOND IN VALID JSON ONLY (no markdown, no extra text):
-{{"verified_class":"{target_class}","description":"<one concise sentence description>","suggested_action":"<ACTION_VERB> - <detailed tactical instruction and justification for field troops>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
+{{"verified_class":"{target_class}","description":"<one concise sentence description, max 30 words>","suggested_action":"<ACTION_VERB> - <tactical instruction, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
 """
 
     payload = {
@@ -213,8 +213,10 @@ RESPOND IN VALID JSON ONLY (no markdown, no extra text):
                 final_severity = enforce_weapon_escalation(str(desc), act, str(sev_raw).strip(), target_id)
                 sev_level, sev_label = resolve_severity(final_severity, recon_count)
                 act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count)
+                desc = limit_text_words(desc, 30)
+                act = limit_text_words(act, 30)
                 print(f"[VLM ENGINE] Target ID {target_id} VLM analysis complete.\n  -> Description: {desc}\n  -> Suggested Action: {act}\n  -> Severity: {sev_label}\n")
-                return str(desc), act, str(verified_cls), sev_label
+                return desc, act, str(verified_cls), sev_label
             else:
                 last_error = "VLM returned empty description"
                 logger.warning("VLM returned empty description for %s, attempt %d", target_id, attempt + 1)
@@ -275,6 +277,8 @@ RESPOND IN VALID JSON ONLY (no markdown, no extra text):
     # Fallback severity based on ReID count and duration when VLM is unavailable (never null)
     sev_level, sev_label = resolve_severity(None, recon_count)
     act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count)
+    desc = limit_text_words(desc, 30)
+    act = limit_text_words(act, 30)
     return desc, act, target_class, sev_label
 
 
@@ -623,7 +627,7 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
 
                 # Severity/description/action are decided by VLM or resolved fallback
                 if p_data and (p_data.get("description") or p_data.get("severity")):
-                    person_result["description"] = p_data.get("description", "")
+                    person_result["description"] = limit_text_words(p_data.get("description", ""), 30)
                     sev_level, sev_label = resolve_severity(p_data.get("severity"), person_result.get("reidentification_count", 0))
                     person_result["severity_level"] = sev_level
                     person_result["severity"] = sev_label
@@ -639,7 +643,7 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                         person_result["class"] = vlm_class
                 else:
                     description, suggest_action, vlm_class, vlm_severity = get_vlm_behavior_description_and_action(person_result, kf_paths)
-                    person_result["description"] = description
+                    person_result["description"] = limit_text_words(description, 30)
                     sev_level, sev_label = resolve_severity(vlm_severity, person_result.get("reidentification_count", 0))
                     person_result["severity_level"], person_result["severity"] = sev_level, sev_label
                     person_result["suggest_action"] = ensure_detailed_suggested_action(

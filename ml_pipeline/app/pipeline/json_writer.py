@@ -1,7 +1,7 @@
 import os
 import json
 
-from pipeline.utils import format_time, get_cardinal_direction, resolve_severity, ensure_detailed_suggested_action
+from pipeline.utils import format_time, get_cardinal_direction, resolve_severity, ensure_detailed_suggested_action, limit_text_words
 
 
 class JsonWriter:
@@ -135,7 +135,7 @@ class JsonWriter:
                     sev_label,
 
                 "description":
-                    person_data.get("description", ""),
+                    limit_text_words(person_data.get("description", ""), 30),
 
                 "suggest_action":
                     suggest_act,

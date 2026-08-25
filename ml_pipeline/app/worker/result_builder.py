@@ -1,4 +1,4 @@
-from pipeline.utils import format_time, get_cardinal_direction, resolve_severity, ensure_detailed_suggested_action
+from pipeline.utils import format_time, get_cardinal_direction, resolve_severity, ensure_detailed_suggested_action, limit_text_words
 
 
 def build_result_json(persons):
@@ -116,7 +116,7 @@ def build_result_json(persons):
 
             "severity": severity_label,
 
-            "description": person.get("description", ""),
+            "description": limit_text_words(person.get("description", ""), 30),
 
             "suggest_action": suggest_act,
 

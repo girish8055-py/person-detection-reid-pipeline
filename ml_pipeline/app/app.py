@@ -30,7 +30,7 @@ import requests
 from flask import Flask, jsonify, render_template_string, request
 
 from pipeline.video_processor import VideoProcessor
-from pipeline.utils import get_severity_from_label, resolve_severity, ensure_detailed_suggested_action
+from pipeline.utils import get_severity_from_label, resolve_severity, ensure_detailed_suggested_action, limit_text_words
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ def _run_job_local_file(job_id: str, video_path: str, csv_path: str = None):
 
                 # Severity/description/action are decided by VLM or fallback
                 if p_data and (p_data.get("description") or p_data.get("severity")):
-                    person_result["description"] = p_data.get("description", "")
+                    person_result["description"] = limit_text_words(p_data.get("description", ""), 30)
                     vlm_class = p_data.get("class")
                     if vlm_class and vlm_class != person_result.get("class"):
                         person_result["class"] = vlm_class
@@ -195,7 +195,7 @@ def _run_job_local_file(job_id: str, video_path: str, csv_path: str = None):
                     )
                 else:
                     description, suggest_action, vlm_class, vlm_severity = get_vlm_behavior_description_and_action(person_result, kf_paths)
-                    person_result["description"] = description
+                    person_result["description"] = limit_text_words(description, 30)
                     if vlm_class and vlm_class != person_result.get("class"):
                         person_result["class"] = vlm_class
 

@@ -104,20 +104,37 @@ def resolve_severity(vlm_severity, reid_count=0):
     return get_severity_level(reid_count)
 
 
+def limit_text_words(text, max_words=30):
+    """
+    Ensures text is at most max_words long. If longer, truncates to max_words
+    and formats cleanly with a period.
+    """
+    if not text:
+        return ""
+    words = str(text).strip().split()
+    if len(words) <= max_words:
+        return str(text).strip()
+    truncated = " ".join(words[:max_words]).rstrip(",;-—:")
+    if not truncated.endswith("."):
+        truncated += "."
+    return truncated
+
+
 def ensure_detailed_suggested_action(act, severity_label="LOW", target_id="target", duration=0, reid_count=0):
     """
     Ensures suggested_action is never just a single word (e.g. 'monitor', 'track', 'alert', 'detain').
     If act is a single word or brief phrase, expands it into a complete tactical recommendation.
+    Enforces a strict 30-word limit on the output.
     """
     if not act:
         act = "MONITOR"
 
     clean_act = str(act).strip()
 
-    # If it's already a full sentence/description (> 3 words), return it as is
+    # If it's already a sentence (> 3 words), limit to 30 words and return
     words = clean_act.split()
     if len(words) > 3:
-        return clean_act
+        return limit_text_words(clean_act, 30)
 
     first_word = words[0].strip(" -—:,").upper()
 
@@ -129,15 +146,17 @@ def ensure_detailed_suggested_action(act, severity_label="LOW", target_id="targe
     }
 
     if first_word in action_templates:
-        return action_templates[first_word]
-
-    # Fallback template based on severity label
-    sev_upper = str(severity_label).upper() if severity_label else "LOW"
-    if sev_upper == "CRITICAL":
-        return f"DETAIN — Critical threat level assessed for Target {target_id}. Dispatch reaction force to intercept immediately."
-    elif sev_upper == "HIGH":
-        return f"ALERT — High priority observation on Target {target_id}. Alert field units and maintain continuous track."
-    elif sev_upper == "MEDIUM":
-        return f"TRACK — Target {target_id} exhibits moderate activity. Continue automated tracking and log keyframes."
+        res = action_templates[first_word]
     else:
-        return f"MONITOR — Routine surveillance on Target {target_id}. Maintain passive observation."
+        # Fallback template based on severity label
+        sev_upper = str(severity_label).upper() if severity_label else "LOW"
+        if sev_upper == "CRITICAL":
+            res = f"DETAIN — Critical threat level assessed for Target {target_id}. Dispatch reaction force to intercept immediately."
+        elif sev_upper == "HIGH":
+            res = f"ALERT — High priority observation on Target {target_id}. Alert field units and maintain continuous track."
+        elif sev_upper == "MEDIUM":
+            res = f"TRACK — Target {target_id} exhibits moderate activity. Continue automated tracking and log keyframes."
+        else:
+            res = f"MONITOR — Routine surveillance on Target {target_id}. Maintain passive observation."
+
+    return limit_text_words(res, 30)

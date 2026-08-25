@@ -27,7 +27,7 @@ from pipeline.identity_manager import IdentityManager
 from pipeline.reid.utils import crop_person
 from pipeline.reid.config import prefix_for_class
 from pipeline.telemetry import TelemetryReader
-from pipeline.utils import format_time, get_severity_from_label, resolve_severity, ensure_detailed_suggested_action
+from pipeline.utils import format_time, get_severity_from_label, resolve_severity, ensure_detailed_suggested_action, limit_text_words
 from pipeline.vlm_verifier import verify_object_class
 
 logger = logging.getLogger(__name__)
@@ -367,7 +367,7 @@ class VideoProcessor:
             description, suggest_action, vlm_class, vlm_severity = (
                 get_vlm_behavior_description_and_action(pseudo_result, kf_paths)
             )
-            p_data["description"] = description
+            p_data["description"] = limit_text_words(description, 30)
             if vlm_class and vlm_class != p_data.get("class"):
                 p_data["class"] = vlm_class
 
