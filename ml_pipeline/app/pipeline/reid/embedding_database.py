@@ -27,6 +27,7 @@ class PersonRecord:
     bbox: Tuple[float, float, float, float]  # x1, y1, x2, y2 (latest)
     confidence: float
     camera_id: str = "default"
+    obj_class: str = "person"        # "person" / "vehicle" -- keeps ID prefix consistent with class
     hits: int = 1                    # how many times this identity has been matched
     embedding_history_len: int = field(default=1, repr=False)
 
@@ -48,7 +49,9 @@ class EmbeddingDatabase:
 
     def __init__(self):
         self._records: Dict[str, PersonRecord] = {}
-        self._next_numeric_id = 1
+        # One independent counter per ID prefix, so Person_ and Vehicle_
+        # sequences each start at 001 (Person_001..., Vehicle_001...).
+        self._next_numeric_id: Dict[str, int] = {}
         self._lock = threading.RLock()
 
     # ------------------------------------------------------------------ #
@@ -56,8 +59,9 @@ class EmbeddingDatabase:
     # ------------------------------------------------------------------ #
     def new_id(self, prefix: str = "Person_", padding: int = 3) -> str:
         with self._lock:
-            gid = f"{prefix}{str(self._next_numeric_id).zfill(padding)}"
-            self._next_numeric_id += 1
+            next_num = self._next_numeric_id.get(prefix, 1)
+            gid = f"{prefix}{str(next_num).zfill(padding)}"
+            self._next_numeric_id[prefix] = next_num + 1
             return gid
 
     # ------------------------------------------------------------------ #
@@ -75,10 +79,14 @@ class EmbeddingDatabase:
         with self._lock:
             self._records.pop(global_id, None)
 
-    def get_by_tracker_id(self, tracker_id: int, camera_id: str = "default") -> Optional[PersonRecord]:
+    def get_by_tracker_id(self, tracker_id: int, camera_id: str = "default", obj_class: Optional[str] = None) -> Optional[PersonRecord]:
         with self._lock:
             for rec in self._records.values():
                 if rec.tracker_id == tracker_id and rec.camera_id == camera_id:
+                    # Never attach a detection to an identity of a different
+                    # class (a car must not inherit a Person_xxx id).
+                    if obj_class is not None and rec.obj_class != obj_class:
+                        continue
                     return rec
         return None
 
@@ -88,10 +96,17 @@ class EmbeddingDatabase:
                 return list(self._records.values())
             return [r for r in self._records.values() if r.camera_id == camera_id]
 
-    def gallery_arrays(self, camera_id: Optional[str] = None) -> Tuple[List[str], np.ndarray]:
-        """Returns (global_ids, embeddings[N, D]) for similarity search."""
+    def gallery_arrays(self, camera_id: Optional[str] = None, obj_class: Optional[str] = None) -> Tuple[List[str], np.ndarray]:
+        """Returns (global_ids, embeddings[N, D]) for similarity search.
+
+        If obj_class is given, only identities of the same class are
+        searched, so a vehicle can never be re-identified as a person
+        (and vice versa).
+        """
         with self._lock:
             records = self.all_records(camera_id)
+            if obj_class is not None:
+                records = [r for r in records if r.obj_class == obj_class]
             ids = [r.global_id for r in records]
             if not ids:
                 return [], np.zeros((0, 0), dtype=np.float32)

@@ -49,6 +49,9 @@ class PersonManager:
             heading = det.get("heading")
             detection_time = det.get("detection_time")  # ISO string, if telemetry available
             detected_class = det.get("class", "person")
+            confidence = det.get("confidence")
+            bbox = det.get("bbox")
+            frame_num = det.get("frame_num")
 
             # -------------------------------------------------
             # First time seeing this person
@@ -81,6 +84,9 @@ class PersonManager:
                     "entry_distance": distance,
                     "entry_heading": heading,
                     "entry_detection_time": detection_time,
+                    "entry_confidence": confidence,
+                    "entry_bbox": bbox,
+                    "start_frame": frame_num,
                 }
 
             else:
@@ -96,24 +102,29 @@ class PersonManager:
 
                     person["reidentification_count"] += 1
 
-                    # New appearance starting -> reset entry GPS
+                    # New appearance starting -> reset entry GPS & info
                     person["entry_lat"] = lat
                     person["entry_lon"] = lon
                     person["entry_alt"] = alt
                     person["entry_distance"] = distance
                     person["entry_heading"] = heading
                     person["entry_detection_time"] = detection_time
+                    person["entry_confidence"] = confidence
+                    person["entry_bbox"] = bbox
+                    person["start_frame"] = frame_num
 
                 person["last_seen"] = current_time
 
-            # Always keep the latest GPS/time as the running "last seen at" position,
-            # so whenever this appearance closes we know where/when that was.
+            # Always keep the latest position & metadata
             self.persons[person_id]["last_lat"] = lat
             self.persons[person_id]["last_lon"] = lon
             self.persons[person_id]["last_alt"] = alt
             self.persons[person_id]["last_distance"] = distance
             self.persons[person_id]["last_heading"] = heading
             self.persons[person_id]["last_detection_time"] = detection_time
+            self.persons[person_id]["last_confidence"] = confidence
+            self.persons[person_id]["last_bbox"] = bbox
+            self.persons[person_id]["end_frame"] = frame_num
 
         # -------------------------------------------------
         # Close appearance if person disappeared
@@ -138,6 +149,14 @@ class PersonManager:
                     "exit_time": exit_time,
 
                     "duration": duration,
+
+                    "confidence": person.get("entry_confidence") or person.get("last_confidence"),
+
+                    "bbox": person.get("entry_bbox") or person.get("last_bbox"),
+
+                    "start_frame": person.get("start_frame"),
+
+                    "end_frame": person.get("end_frame"),
 
                     "entry_lat": person.get("entry_lat"),
                     "entry_lon": person.get("entry_lon"),
@@ -180,6 +199,14 @@ class PersonManager:
                     "exit_time": final_time,
 
                     "duration": duration,
+
+                    "confidence": person.get("entry_confidence") or person.get("last_confidence"),
+
+                    "bbox": person.get("entry_bbox") or person.get("last_bbox"),
+
+                    "start_frame": person.get("start_frame"),
+
+                    "end_frame": person.get("end_frame"),
 
                     "entry_lat": person.get("entry_lat"),
                     "entry_lon": person.get("entry_lon"),

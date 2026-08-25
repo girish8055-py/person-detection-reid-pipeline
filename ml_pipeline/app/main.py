@@ -1,5 +1,6 @@
 import cv2
 import logging
+import os
 logging.basicConfig(level=logging.DEBUG)
 from pipeline.detector import PersonDetector
 from pipeline.person_manager import PersonManager
@@ -9,23 +10,26 @@ from pipeline.identity_manager import IdentityManager
 from pipeline.reid.utils import crop_person
 from pipeline.telemetry import TelemetryReader
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+output_folder = os.path.join(BASE_DIR, "outputs")
+
 # once, near your other manager initializations:
 telemetry_reader = TelemetryReader(
-    teledata_csv_path=r"D:\deployment_model\MK15 12-11-25\offline_teledata_67d53de3-7e4b-4d0f-b913-f0776058dca8.csv"
+    teledata_csv_path=os.path.join(BASE_DIR, "MK15 12-11-25", "offline_teledata_67d53de3-7e4b-4d0f-b913-f0776058dca8.csv")
 )
 # -------------------------------------------------------
 # Initialize Managers
 # -------------------------------------------------------
 person_manager = PersonManager()
-identity_manager = IdentityManager(weights_path=r"D:\deployment_model\ml_pipeline\app\models\osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth")
+identity_manager = IdentityManager(weights_path=os.path.join(BASE_DIR, "models", "osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth"))
 json_writer = JsonWriter()
 screenshot_manager = ScreenshotManager(output_folder=output_folder)
 #screenshot_manager = ScreenshotManager()
 # -------------------------------------------------------
 # Paths
 # -------------------------------------------------------
-MODEL_PATH = r"D:\deployment_model\ml_pipeline\app\models\best.pt"
-VIDEO_PATH = r"D:\deployment_model\1.mp4"
+MODEL_PATH = os.path.join(BASE_DIR, "models", "best.pt")
+VIDEO_PATH = os.path.join(BASE_DIR, "1.mp4")
 
 # -------------------------------------------------------
 # Initialize Detector
@@ -88,6 +92,7 @@ while True:
                 bboxes=bboxes,
                 confidences=confidences,
                 timestamp=current_time,
+                classes=[det.get("class", "person") for det in detections],
             )
 
             for det, person_id in zip(detections, person_ids):
@@ -136,10 +141,19 @@ while True:
             2
         )
 
+        pid_str = str(person_id).strip()
+        lower = pid_str.lower()
+        if lower.startswith(("person", "vehicle")):
+            label = pid_str
+        elif det.get("class"):
+            label = f"{det['class']}_{pid_str}"
+        else:
+            label = pid_str
+
         cv2.putText(
             frame,
-            f"Person ID : {person_id}",
-            (x1, y1 - 10),
+            label,
+            (x1, max(y1 - 10, 20)),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
             (0, 255, 0),

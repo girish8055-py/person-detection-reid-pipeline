@@ -1,25 +1,281 @@
+import base64
+import json
 import logging
 import os
 import requests
+import requests.exceptions
 import shutil
+import sys
 import threading
 import time
+from pathlib import Path
+
+# Add parent directory (app/) to sys.path to enable module resolution
+_app_dir = str(Path(__file__).resolve().parent.parent)
+# Additional imports for VLM image processing
+import io
+from PIL import Image
+if _app_dir not in sys.path:
+    sys.path.insert(0, _app_dir)
 
 from downloader import download_video, download_file, download_model
 from pipeline.telemetry import parse_video_start_epoch
-from worker.api_client import (
-    fetch_pending_job,
-    update_status,
-    update_completed,
-    update_failed,
-    fetch_active_model_url,
-    TEST_BASE_URL,
-    PROD_BASE_URL,
-)
+from pipeline.utils import get_severity_from_label, resolve_severity, ensure_detailed_suggested_action
 
-from worker.result_builder import build_result_json
+try:
+    from worker.api_client import (
+        fetch_pending_job,
+        update_status,
+        update_completed,
+        update_failed,
+        fetch_active_model_url,
+        TEST_BASE_URL,
+        PROD_BASE_URL,
+    )
+    from worker.result_builder import build_result_json
+except ModuleNotFoundError:
+    from api_client import (
+        fetch_pending_job,
+        update_status,
+        update_completed,
+        update_failed,
+        fetch_active_model_url,
+        TEST_BASE_URL,
+        PROD_BASE_URL,
+    )
+    from result_builder import build_result_json
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Weapon/threat guardrail: the VLM sometimes describes a gun in the image but
+# still labels the scene "LOW". These keywords are scanned in the VLM's own
+# description/action text and force-escalate the severity so an armed subject
+# is NEVER reported as low threat.
+# ---------------------------------------------------------------------------
+FIRING_KEYWORDS = (
+    "firing", "shoot", "shot", "muzzle flash", "discharging",
+    "opening fire", "opens fire", "gunfire",
+)
+WEAPON_KEYWORDS = (
+    "gun", "rifle", "pistol", "revolver", "shotgun", "firearm",
+    "weapon", "armed with", "holding a", "carrying a", "ak-47", "ak47",
+    "ak-74", "m4 ", "m16", "machine gun", "assault", "ammunition",
+    "ammo", "magazine", "holster", "bullet",
+)
+# Words that contain weapon keywords but mean the opposite/nothing dangerous.
+_WEAPON_FALSE_FRIENDS = ("unarmed", "alarmed", "harmed", "swarmed", "forearmed")
+
+
+def enforce_weapon_escalation(description, action, severity, target_id="N/A"):
+    """
+    Safety net applied to every VLM verdict. If the VLM's own words mention
+    weapons or active firing while the assigned severity is lower than the
+    threat demands, escalate it:
+
+        active firing / muzzle flash  -> CRITICAL (level 4)
+        any visible/mentioned weapon  -> at least HIGH   (level 3)
+
+    Returns the (possibly escalated) severity label string.
+    """
+    blob = f"{description} {action} {severity}".lower()
+    for friend in _WEAPON_FALSE_FRIENDS:
+        blob = blob.replace(friend, "")
+
+    current = get_severity_from_label(severity)
+    current_level = current[0] if current else 1
+
+    if any(kw in blob for kw in FIRING_KEYWORDS):
+        needed_level, needed_label, why = 4, "CRITICAL", "active firing detected"
+    elif any(kw in blob for kw in WEAPON_KEYWORDS):
+        needed_level, needed_label, why = 3, "HIGH", "weapon detected"
+    else:
+        return severity
+
+    if current_level < needed_level:
+        print(
+            f"[VLM ENGINE] THREAT ESCALATION Target ID {target_id}: "
+            f"severity '{severity}' -> '{needed_label}' ({why} in VLM analysis)."
+        )
+        logger.warning(
+            "Threat escalation for %s: '%s' -> '%s' (%s)",
+            target_id, severity, needed_label, why,
+        )
+        return needed_label
+
+    return severity
+
+
+def get_vlm_behavior_description_and_action(person_result, keyframe_paths):
+    """
+    Sends keyframe images and telemetry metadata of a target detection to
+    a local VLM (llava) via Ollama, requesting a visual summary, recommended
+    action and a severity assessment based on the visual analysis.
+    """
+    ollama_url = "http://localhost:11434/api/generate"
+    
+    images_b64 = []
+    max_frames = 3
+    for kf_path in keyframe_paths[:max_frames]:
+        if os.path.exists(kf_path):
+            try:
+                # Resize image to max 512x512 for efficient transmission
+                with Image.open(kf_path) as img:
+                    img.thumbnail((512, 512))
+                    buf = io.BytesIO()
+                    img.save(buf, format="JPEG")
+                    images_b64.append(base64.b64encode(buf.getvalue()).decode("utf-8"))
+            except Exception as e:
+                logger.error("Failed to process keyframe %s: %s", kf_path, e)
+        else:
+            logger.warning("Keyframe path does not exist: %s", kf_path)
+
+    target_id = person_result.get('id_number', 'N/A')
+    target_class = person_result.get('class', 'target')
+
+    logger.info("Calling local VLM (LLaVA) for Target ID %s (%s) with %d keyframe image(s)...", 
+                target_id, target_class, len(images_b64))
+    print(f"\n[VLM ENGINE] Requesting VLM analysis for Target ID {target_id} ({target_class}) with {len(images_b64)} keyframe(s)...")
+
+    # Telemetry summary for the prompt
+    duration = person_result.get('total_duration', 0)
+    entry_t = person_result.get('entry_time', 'N/A')
+    exit_t = person_result.get('exit_time', 'N/A')
+    recon_count = person_result.get('reidentification_count', 0)
+    appearances = person_result.get('appearances', [])
+
+    prompt = f"""You are the ARMY CHIEF (Chief of Army Staff) personally reviewing drone surveillance evidence. You have decades of battlefield command experience and you issue clear, decisive tactical orders. Analyze the provided keyframe images of a detected {target_class} as if briefing your field commanders.
+
+SITREP (Situation Report):
+TARGET: {target_id} | Class: {target_class}
+Duration in area of operations: {duration}s | Observed: {entry_t} to {exit_t} | Re‑appeared: {recon_count} time(s)
+
+STEP 1 — MANDATORY WEAPON & THREAT SCAN (do this FIRST):
+- Zoom into every image mentally and scan for WEAPONS: guns, rifles, pistols, revolvers, shotguns, AK/M4/M16 style weapons, machine guns, knives, explosives, rocket launchers.
+- Scan for HOSTILE ACTS: aiming a weapon, firing (muzzle flash, smoke, recoil pose), taking cover, dragging a casualty.
+- Scan for HOSTILE INDICATORS: military/tactical gear, body armour, helmets, ammunition magazines, holsters, uniformed combatants, attack formation.
+
+STEP 2 — COMMANDER'S DECISION:
+- Describe in ONE concise sentence the target's appearance (clothing, build) and activity — if a weapon is present or being fired, you MUST mention it explicitly in the description.
+- AS THE ARMY CHIEF, issue a DETAILED TACTICAL ACTION COMMAND for your troops (e.g. "ALERT — Raise perimeter force readiness and dispatch patrol to monitor subject loitering near sector"). DO NOT RESPOND WITH A SINGLE WORD LIKE "MONITOR" OR "TRACK". Provide the action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a full tactical instruction and justification.
+- Assess ONE overall THREAT LEVEL using these NON-NEGOTIABLE rules:
+    * ANY firearm visible, held, aimed, or fired  -> severity MUST be "CRITICAL". An armed subject is NEVER "LOW" or "MEDIUM". No exceptions.
+    * Military/tactical gear or hostile posture without visible weapon -> at least "HIGH".
+    * Suspicious conduct only (loitering near assets, concealment, evasive behaviour) -> "HIGH".
+    * Unusual but plausibly innocent activity -> "MEDIUM".
+    * Routine civilian movement, clearly benign -> "LOW".
+- A commander who calls an armed gunman a "LOW" threat gets his soldiers killed. When in doubt, ESCALATE.
+- If the target lingers >60s without clear purpose, treat it as potential reconnaissance of our position and raise severity accordingly.
+
+RESPOND IN VALID JSON ONLY (no markdown, no extra text):
+{{"verified_class":"{target_class}","description":"<one concise sentence description>","suggested_action":"<ACTION_VERB> - <detailed tactical instruction and justification for field troops>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
+"""
+
+    payload = {
+        "model": "llava:latest",
+        "prompt": prompt,
+        "images": images_b64,
+        "stream": False,
+        "format": "json",
+        # Low temperature -> consistent, deterministic threat assessments
+        # instead of creative variation between runs.
+        "options": {"temperature": 0.2},
+    }
+
+    # Retry VLM up to 3 times on failure
+    last_error = None
+    for attempt in range(3):
+        try:
+            if attempt > 0:
+                print(f"[VLM ENGINE] Retrying VLM call for Target ID {target_id} (attempt {attempt + 1})...")
+            response = requests.post(ollama_url, json=payload, timeout=120)
+            response.raise_for_status()
+            response_data = response.json()
+            raw_resp = response_data.get("response", "{}")
+            try:
+                model_output = json.loads(raw_resp)
+            except Exception:
+                model_output = {}
+            if not isinstance(model_output, dict):
+                model_output = {}
+            verified_cls = model_output.get("verified_class", target_class)
+            desc = model_output.get("description", "").strip()
+            act = (
+                model_output.get("suggested_action")
+                or model_output.get("action_taken")
+                or ""
+            )
+            act = str(act).strip()
+            sev_raw = model_output.get("severity", "")
+            if desc:
+                # Guardrail: never let an armed/firing subject be reported
+                # as a low threat, even if the VLM misjudges it.
+                final_severity = enforce_weapon_escalation(str(desc), act, str(sev_raw).strip(), target_id)
+                sev_level, sev_label = resolve_severity(final_severity, recon_count)
+                act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count)
+                print(f"[VLM ENGINE] Target ID {target_id} VLM analysis complete.\n  -> Description: {desc}\n  -> Suggested Action: {act}\n  -> Severity: {sev_label}\n")
+                return str(desc), act, str(verified_cls), sev_label
+            else:
+                last_error = "VLM returned empty description"
+                logger.warning("VLM returned empty description for %s, attempt %d", target_id, attempt + 1)
+        except Exception as e:
+            last_error = str(e)
+            logger.error("VLM call failed for %s (attempt %d): %s", target_id, attempt + 1, e)
+            print(f"[VLM ENGINE] VLM call failed for Target ID {target_id} (attempt {attempt + 1}): {e}")
+
+    # ---- Smart fallback when VLM is unavailable ----
+    print(f"[VLM ENGINE] VLM unavailable after retries. Using smart fallback for Target ID {target_id}.")
+
+    # Analyze appearances for smarter fallback
+    total_appearances = len(appearances)
+    # Determine if the target moved by checking if any appearance has more than one coordinate point
+    moving = any(len(app.get("coordinates", [])) > 1 for app in appearances)
+
+    # Compute spatial spread of coordinates to differentiate between roaming and loitering
+    all_coords = []
+    for app in appearances:
+        for coord in app.get("coordinates", []):
+            all_coords.append(coord)
+    if all_coords:
+        xs = [c[0] for c in all_coords]
+        ys = [c[1] for c in all_coords]
+        span_x = max(xs) - min(xs)
+        span_y = max(ys) - min(ys)
+        area_spread = span_x * span_y
+    else:
+        area_spread = 0
+
+    # Thresholds for deciding narrative style (tuned empirically)
+    LARGE_AREA = 5000  # pixels squared, adjust as needed
+
+    if total_appearances > 2:
+        if moving:
+            if area_spread > LARGE_AREA:
+                movement_desc = "traversed a wide area"
+            else:
+                movement_desc = "moved within a confined zone"
+        else:
+            movement_desc = "appeared intermittently without clear motion"
+        desc = f"{target_class.title()} {target_id} {movement_desc} over {duration}s across {total_appearances} sightings."
+    elif moving:
+        desc = f"{target_class.title()} {target_id} was observed moving from {entry_t} to {exit_t} ({duration}s)."
+    else:
+        desc = f"{target_class.title()} {target_id} remained in a localized area between {entry_t} and {exit_t} ({duration}s)."
+
+    # Generate an actionable recommendation based on duration and re‑identifications
+    if duration > 120 or recon_count > 3:
+        act = f"ALERT — Target {target_id} persisted for {duration}s with {recon_count} re‑appearances. Recommend operator review for possible loitering."
+    elif duration > 60:
+        act = f"TRACK — Target {target_id} active for {duration}s. Continue monitoring for further activity."
+    elif recon_count > 2:
+        act = f"TRACK — Target {target_id} re‑identified {recon_count} times. Might indicate a point of interest."
+    else:
+        act = f"MONITOR — Target {target_id} observed briefly ({duration}s). Standard surveillance."
+
+    # Fallback severity based on ReID count and duration when VLM is unavailable (never null)
+    sev_level, sev_label = resolve_severity(None, recon_count)
+    act = ensure_detailed_suggested_action(act, sev_label, target_id, duration, recon_count)
+    return desc, act, target_class, sev_label
 
 
 def upload_to_azure(file_path, filename, flight_id="default", sas_url=None, base_url=None):
@@ -28,7 +284,11 @@ def upload_to_azure(file_path, filename, flight_id="default", sas_url=None, base
         base_url = PROD_BASE_URL
     fallback_url = f"{base_url}/uploads/threatimages/{flight_id}/{azure_filename}"
     
-    if not sas_url:
+    # Priority: Environment variable override > server task sas_url > default fallback
+    env_sas = os.getenv("AZURE_CONTAINER_SAS_URL")
+    if env_sas:
+        sas_url = env_sas
+    elif not sas_url:
         sas_url = os.getenv(
             "AZURE_CONTAINER_SAS_URL",
             "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237?sv=2026-06-06&st=2026-07-18T21%3A59%3A09Z&se=2026-07-20T12%3A19%3A09Z&sr=c&sp=cw&sig=cd0wCdPPDTiHTFArrxQ2Szak2b64TEtshg4DbpXgIe0%3D"
@@ -53,7 +313,10 @@ def upload_to_azure(file_path, filename, flight_id="default", sas_url=None, base
             
         return f"{container_url}/threatimages/{flight_id}/{azure_filename}"
     except Exception as e:
-        logger.exception("Failed to upload to Azure Container SAS via requests: %s. Using fallback URL.", e)
+        if "403" in str(e):
+            logger.warning("[AZURE SAS EXPIRED] Azure SAS Token authentication failed (403 Forbidden). The SAS token sent by the backend server is expired. Using fallback URL.")
+        else:
+            logger.warning("Failed to upload to Azure Container SAS (%s). Using fallback URL.", e)
         return fallback_url
 
 
@@ -101,10 +364,35 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
             # Download Video & Telemetry
             # -----------------------------
 
-            video_path = download_video(
-                job["video_url"],
-                task_id
-            )
+            try:
+                video_path = download_video(
+                    job["video_url"],
+                    task_id
+                )
+            except RuntimeError as video_err:
+                # Check if this is a network connectivity error (server down, refused, timeout).
+                # In that case, reset to PENDING so the task can be retried later.
+                err_str = str(video_err).lower()
+                is_network_error = any(kw in err_str for kw in [
+                    "connection refused", "connectionrefused",
+                    "failed to establish", "max retries exceeded",
+                    "newconnectionerror", "timeout", "timed out",
+                    "name or service not known", "no route to host",
+                    "connection reset",
+                ])
+                if is_network_error:
+                    logger.warning(
+                        "[%s] Task %s: Video download failed due to network error. "
+                        "Resetting task back to PENDING for retry. Error: %s",
+                        server_name, task_id, video_err
+                    )
+                    update_status(task_id, "PENDING", base_url=base_url)
+                    task_id = None  # Prevent except block from calling update_failed()
+                    time.sleep(30)
+                    continue
+                else:
+                    # Non-network error (e.g., 404, corrupt file) — let it fail permanently
+                    raise
 
             csv_path = None
             flightdata_path = None
@@ -156,16 +444,39 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                         if not model_filename.lower().endswith(".pt"):
                             model_filename = "custom_model.pt"
                     
-                    target_dir = r"D:\deployment_model\ml_pipeline\app\downloaded_model"
                     logger.info("[%s] Downloading detection model from: %s", server_name, model_url)
-                    model_path = download_model(model_url, model_filename)
+                    dl_path = download_model(model_url, model_filename)
+                    if dl_path and os.path.exists(dl_path) and os.path.getsize(dl_path) > 0:
+                        model_path = dl_path
+                    else:
+                        raise RuntimeError("Downloaded model file is empty or invalid")
                 except Exception as model_err:
-                    err_msg = f"Failed to download detection model from '{model_url}': {model_err}"
-                    logger.error("[%s] %s", server_name, err_msg)
-                    raise RuntimeError(f"Model download failed: {err_msg}")
-
-            if not model_path:
-                raise RuntimeError("Detection model could not be loaded because model URL/file is missing or download failed. Default base model fallback is disabled.")
+                    err_msg = f"Failed to download requested detection model from '{model_url}': {model_err}"
+                    logger.error("[%s] %s (No fallback allowed).", server_name, err_msg)
+                    raise RuntimeError(err_msg)
+            else:
+                # No specific model URL in task: use default base model (models/best.pt)
+                default_local_model = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    "models",
+                    "best.pt"
+                )
+                if os.path.exists(default_local_model):
+                    logger.info(
+                        "[%s] No custom model URL in task. Using base model: %s",
+                        server_name, default_local_model
+                    )
+                    model_path = default_local_model
+                else:
+                    logger.warning(
+                        "[%s] Task %s has no model URL and base model 'models/best.pt' is missing. "
+                        "Resetting task back to PENDING for retry.",
+                        server_name, task_id
+                    )
+                    update_status(task_id, "PENDING", base_url=base_url)
+                    task_id = None
+                    time.sleep(30)
+                    continue
 
             output_folder = os.path.join(
                 app_module.OUTPUT_ROOT,
@@ -204,7 +515,10 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
             file_sizes = {}
             
             for pk, pval in persons.items():
-                raw_person_id = f"Person_{pk}" if not str(pk).startswith("Person_") else str(pk)
+                # Keep the class-matched prefix (Person_001 / Vehicle_001)
+                raw_id = str(pk)
+                det_cls = str(pval.get("class", "person")).strip().capitalize()
+                raw_person_id = raw_id if raw_id.lower().startswith(("person_", "vehicle_")) else f"{det_cls}_{raw_id}"
                 
                 # Format time of detection string
                 time_str = "unknown"
@@ -289,6 +603,81 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
             payload = build_result_json(
                 persons
             )
+
+            # Enrich results with VLM description and action recommendation
+            first_person_data = list(persons.values())[0] if persons else {}
+            for person_result in payload["results"]:
+                p_id_str = person_result.get("id_number")
+                p_id = None
+                if p_id_str:
+                    try:
+                        p_id = int(p_id_str)
+                    except ValueError:
+                        p_id = p_id_str
+                
+                p_data = persons.get(p_id) if p_id is not None else None
+                if not p_data:
+                    p_data = first_person_data
+                
+                kf_paths = p_data.get("keyframes", []) if p_data else []
+
+                # Severity/description/action are decided by VLM or resolved fallback
+                if p_data and (p_data.get("description") or p_data.get("severity")):
+                    person_result["description"] = p_data.get("description", "")
+                    sev_level, sev_label = resolve_severity(p_data.get("severity"), person_result.get("reidentification_count", 0))
+                    person_result["severity_level"] = sev_level
+                    person_result["severity"] = sev_label
+                    person_result["suggest_action"] = ensure_detailed_suggested_action(
+                        p_data.get("suggest_action", ""),
+                        sev_label,
+                        person_result.get("id_number", "target"),
+                        person_result.get("total_duration", 0),
+                        person_result.get("reidentification_count", 0)
+                    )
+                    vlm_class = p_data.get("class")
+                    if vlm_class and vlm_class != person_result.get("class"):
+                        person_result["class"] = vlm_class
+                else:
+                    description, suggest_action, vlm_class, vlm_severity = get_vlm_behavior_description_and_action(person_result, kf_paths)
+                    person_result["description"] = description
+                    sev_level, sev_label = resolve_severity(vlm_severity, person_result.get("reidentification_count", 0))
+                    person_result["severity_level"], person_result["severity"] = sev_level, sev_label
+                    person_result["suggest_action"] = ensure_detailed_suggested_action(
+                        suggest_action,
+                        sev_label,
+                        person_result.get("id_number", "target"),
+                        person_result.get("total_duration", 0),
+                        person_result.get("reidentification_count", 0)
+                    )
+                    if vlm_class and vlm_class != person_result.get("class"):
+                        person_result["class"] = vlm_class
+
+                # Every appearance inherits the person's non-null severity.
+                for app_entry in person_result.get("appearances", []):
+                    app_entry["severity_level"] = person_result.get("severity_level")
+                    app_entry["severity"] = person_result.get("severity")
+
+            # -----------------------------
+            # Save Temporary Local Debug JSON
+            # -----------------------------
+            try:
+                debug_payload = {
+                    "status": "COMPLETED",
+                    "task_id": task_id,
+                    "results": payload["results"]
+                }
+                app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                app_debug_file = os.path.join(app_dir, "admin_output_debug.json")
+                with open(app_debug_file, "w", encoding="utf-8") as f:
+                    json.dump(debug_payload, f, indent=4)
+                logger.info("Saved temporary admin payload debug file to: %s", app_debug_file)
+                
+                if output_folder and os.path.exists(output_folder):
+                    job_debug_file = os.path.join(output_folder, "admin_output_debug.json")
+                    with open(job_debug_file, "w", encoding="utf-8") as f:
+                        json.dump(debug_payload, f, indent=4)
+            except Exception as debug_err:
+                logger.warning("Temporary debug JSON write skipped/failed: %s", debug_err)
 
             # -----------------------------
             # Send Completed

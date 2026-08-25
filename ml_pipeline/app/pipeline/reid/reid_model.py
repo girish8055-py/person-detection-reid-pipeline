@@ -17,8 +17,10 @@ logger = logging.getLogger(__name__)
 
 # Official pretrained weights (ImageNet + market1501 pretrained OSNet_x1_0)
 # hosted by the deep-person-reid maintainers.
-_OFFICIAL_OSNET_X1_0_URL = (
-    "D:\deployment_model\ml_pipeline\app\models\osnet_x1_0_imagenet.pth"
+_OFFICIAL_OSNET_X1_0_URL = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "models",
+    "osnet_x1_0_imagenet.pth"
 )
 
 

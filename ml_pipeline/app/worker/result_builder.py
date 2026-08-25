@@ -1,4 +1,4 @@
-from pipeline.utils import format_time, get_cardinal_direction
+from pipeline.utils import format_time, get_cardinal_direction, resolve_severity, ensure_detailed_suggested_action
 
 
 def build_result_json(persons):
@@ -9,20 +9,7 @@ def build_result_json(persons):
 
     results = []
 
-    # <-- FOR DUMMY DATA: List of distinct classes for different IDs
-    dummy_classes = ["person", "vehicle", "car", "truck", "motorbike"]
-
-    # Generate at least 3 distinct objects with different IDs if fewer detections exist
     expanded_persons = dict(persons)
-    if len(expanded_persons) < 3 and expanded_persons:
-        base_id = list(expanded_persons.keys())[0]
-        base_data = expanded_persons[base_id]
-        for extra_id in range(1, 4):
-            if extra_id not in expanded_persons:
-                import copy
-                new_person = copy.deepcopy(base_data)
-                new_person["person_id"] = extra_id
-                expanded_persons[extra_id] = new_person
 
     for idx, (p_id, person) in enumerate(expanded_persons.items()):
         # Ensure duplicated dummy entries carry a valid distinct filename/url if base had one
@@ -36,6 +23,16 @@ def build_result_json(persons):
 
         appearances = []
 
+        reid_cnt = person.get("reidentification_count", 0)
+        severity_level, severity_label = resolve_severity(person.get("severity"), reid_cnt)
+        suggest_act = ensure_detailed_suggested_action(
+            person.get("suggest_action", ""),
+            severity_label,
+            str(p_id),
+            person.get("total_duration", 0),
+            reid_cnt
+        )
+
         for app in person["appearances"]:
 
             appearances.append({
@@ -48,7 +45,12 @@ def build_result_json(persons):
 
                 "duration": round(app["duration"], 2),
 
-                "confidence": app.get("confidence"),
+                "confidence": round(app.get("confidence"), 2) if app.get("confidence") is not None else None,
+
+                # Severity is decided by VLM / resolved fallback (never null)
+                "severity_level": severity_level,
+
+                "severity": severity_label,
 
                 "entry_location": {
                     "lat": app.get("entry_lat"),
@@ -68,33 +70,39 @@ def build_result_json(persons):
                     "direction": get_cardinal_direction(app.get("exit_heading"))
                 },
 
-                # Add these later when PersonManager stores them
                 "bounding_box": {
-                    "x": None,
-                    "y": None,
-                    "width": None,
-                    "height": None
+                    "x": round(app["bbox"][0], 1) if app.get("bbox") and len(app["bbox"]) >= 4 else None,
+                    "y": round(app["bbox"][1], 1) if app.get("bbox") and len(app["bbox"]) >= 4 else None,
+                    "width": round(app["bbox"][2] - app["bbox"][0], 1) if app.get("bbox") and len(app["bbox"]) >= 4 else None,
+                    "height": round(app["bbox"][3] - app["bbox"][1], 1) if app.get("bbox") and len(app["bbox"]) >= 4 else None
                 },
 
                 "frame_range": {
-                    "start": None,
-                    "end": None
+                    "start": app.get("start_frame"),
+                    "end": app.get("end_frame")
                 }
 
             })
 
-        # Assign a distinct dummy class for each distinct ID
-        assigned_class = dummy_classes[idx % len(dummy_classes)]
+        # Determine overall entry and exit time for this object from its appearances
+        if person.get("appearances"):
+            obj_entry_time = format_time(person["appearances"][0]["entry_time"])
+            obj_exit_time = format_time(person["appearances"][-1]["exit_time"])
+        else:
+            obj_entry_time = format_time(person.get("current_entry", 0))
+            obj_exit_time = format_time(person.get("last_seen", 0))
+
+        assigned_class = person.get("class", "person")
 
         results.append({
 
             "id_number": str(p_id),
 
-            # <-- USE THIS LINE FOR DUMMY DATA (Different class for each different ID)
             "class": assigned_class,
 
-            # <-- USE THIS LINE FOR ORIGINAL REAL DATA (Uncomment line below & comment line above)
-            # "class": person.get("class", "person"),
+            "entry_time": obj_entry_time,
+
+            "exit_time": obj_exit_time,
 
             "total_duration": round(
                 person["total_duration"],
@@ -102,7 +110,15 @@ def build_result_json(persons):
             ),
 
             "reidentification_count":
-                person["reidentification_count"],
+                reid_cnt,
+
+            "severity_level": severity_level,
+
+            "severity": severity_label,
+
+            "description": person.get("description", ""),
+
+            "suggest_action": suggest_act,
 
             "evidence": {
                 "file_name": person_file_name,

@@ -122,10 +122,19 @@ while True:
             2
         )
 
+        pid_str = str(person_id).strip()
+        lower = pid_str.lower()
+        if lower.startswith(("person", "vehicle")):
+            label = pid_str
+        elif det.get("class"):
+            label = f"{det['class']}_{pid_str}"
+        else:
+            label = pid_str
+
         cv2.putText(
             frame,
-            f"Person ID : {person_id}",
-            (x1, y1 - 10),
+            label,
+            (x1, max(y1 - 10, 20)),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
             (0, 255, 0),

@@ -26,7 +26,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from .config import ReIDConfig, DEFAULT_CONFIG
+from .config import ReIDConfig, DEFAULT_CONFIG, prefix_for_class
 from .embedding_database import EmbeddingDatabase, PersonRecord
 from .similarity import best_match, cosine_similarity
 
@@ -50,26 +50,37 @@ class IdentityManager:
         confidence: float = 1.0,
         camera_id: str = "default",
         timestamp: Optional[float] = None,
+        obj_class: Optional[str] = None,
     ) -> str:
         """
         Main entry point. Call this once per detection, per frame, after
         ByteTrack + crop + embedding extraction. Returns the stable
         global_id string to write into the JSON output.
+
+        obj_class ("person" / "vehicle") decides the ID prefix so the ID
+        name always matches the class name (Person_001 / Vehicle_001) and
+        identities are only ever matched within the same class.
         """
         ts = timestamp if timestamp is not None else time.time()
         self._maybe_purge_stale(ts)
 
-        # 1. Fast path: tracker_id already known to us.
-        existing = self.db.get_by_tracker_id(tracker_id, camera_id=camera_id)
+        prefix = prefix_for_class(obj_class)
+
+        # 1. Fast path: tracker_id already known to us (same class only).
+        existing = self.db.get_by_tracker_id(tracker_id, camera_id=camera_id, obj_class=obj_class)
         if existing is not None:
             self.db.smooth_update(
                 existing.global_id, embedding, tracker_id, bbox, confidence, ts,
                 ema_alpha=self.cfg.ema_alpha,
             )
+            logger.debug(
+                "Fast path: tracker_id=%s -> %s (hits=%d)",
+                tracker_id, existing.global_id, existing.hits + 1,
+            )
             return existing.global_id
 
-        # 2. New tracker_id -> search the gallery.
-        gallery_ids, gallery_embs = self.db.gallery_arrays(camera_id=camera_id)
+        # 2. New tracker_id -> search the gallery (same class only).
+        gallery_ids, gallery_embs = self.db.gallery_arrays(camera_id=camera_id, obj_class=obj_class)
         candidate_id, score = best_match(
             embedding, gallery_ids, gallery_embs, self.cfg.similarity_threshold
         )
@@ -94,8 +105,8 @@ class IdentityManager:
                     candidate_id, score, tracker_id,
                 )
 
-        # 3. No acceptable match -> brand new identity.
-        new_id = self.db.new_id(prefix=self.cfg.id_prefix, padding=self.cfg.id_padding)
+        # 3. No acceptable match -> brand new identity (prefix = class name).
+        new_id = self.db.new_id(prefix=prefix, padding=self.cfg.id_padding)
         record = PersonRecord(
             global_id=new_id,
             embedding=self._l2norm(embedding),
@@ -105,6 +116,7 @@ class IdentityManager:
             bbox=bbox,
             confidence=confidence,
             camera_id=camera_id,
+            obj_class=obj_class or "person",
         )
         self.db.add(record)
         logger.debug("New identity %s created for tracker_id=%s", new_id, tracker_id)
@@ -113,20 +125,58 @@ class IdentityManager:
     def resolve_batch(self, detections: list, camera_id: str = "default", timestamp: Optional[float] = None) -> list:
         """
         detections: list of dicts each with keys
-            tracker_id, embedding, bbox, confidence (optional)
+            tracker_id, embedding, bbox, confidence (optional), class (optional)
         Returns a list of global_id strings in the same order.
+
+        The optional per-detection "class" key ("person"/"vehicle") makes
+        the minted ID match the class name and restricts matching to
+        same-class identities.
+
+        Two detections in the SAME frame must never share a global_id.
+        If resolve() returns a global_id already assigned earlier in this
+        batch, we fall through to minting a new identity instead.
         """
-        return [
-            self.resolve(
+        used_ids = set()
+        results = []
+        for d in detections:
+            gid = self.resolve(
                 tracker_id=d["tracker_id"],
                 embedding=d["embedding"],
                 bbox=d["bbox"],
                 confidence=d.get("confidence", 1.0),
                 camera_id=camera_id,
                 timestamp=timestamp,
+                obj_class=d.get("class"),
             )
-            for d in detections
-        ]
+            # Enforce same-frame uniqueness: if this global_id was already
+            # assigned to a different detection in this frame, the gallery
+            # search produced a false merge.  Re-resolve with a temporary
+            # threshold override (force new identity).
+            if gid in used_ids:
+                logger.warning(
+                    "Same-frame uniqueness: tracker_id=%s resolved to %s "
+                    "which was already used; minting new identity",
+                    d["tracker_id"], gid,
+                )
+                new_id = self.db.new_id(
+                    prefix=prefix_for_class(d.get("class")), padding=self.cfg.id_padding
+                )
+                record = PersonRecord(
+                    global_id=new_id,
+                    embedding=self._l2norm(d["embedding"]),
+                    tracker_id=d["tracker_id"],
+                    first_seen=timestamp if timestamp is not None else time.time(),
+                    last_seen=timestamp if timestamp is not None else time.time(),
+                    bbox=d["bbox"],
+                    confidence=d.get("confidence", 1.0),
+                    camera_id=camera_id,
+                    obj_class=d.get("class") or "person",
+                )
+                self.db.add(record)
+                gid = new_id
+            used_ids.add(gid)
+            results.append(gid)
+        return results
 
     # ------------------------------------------------------------------ #
     # Internals

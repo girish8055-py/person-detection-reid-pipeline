@@ -6,7 +6,7 @@ All tunables live here so nothing is hardcoded deeper in the pipeline.
 """
 
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Optional, Tuple
 import torch
 
 
@@ -25,25 +25,24 @@ class ReIDConfig:
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-    similarity_threshold: float = 0.68
-    # If the best match's similarity falls between (threshold - margin) and
-    # threshold, we can optionally use spatio-temporal gating to still accept
-    # it. Keep margin small to avoid false merges.
+# ---------------- Matching ----------------
+    similarity_threshold: float = 0.4
+    # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 
     # ---------------- Embedding smoothing ----------------
     # new_embedding = (1 - ema_alpha) * old_embedding + ema_alpha * current_embedding
-    ema_alpha: float = 0.2
+    ema_alpha: float = 0.4
 
     # ---------------- Spatio-temporal gating (optional, off by default) ----------------
     use_spatiotemporal_gating: bool = False
     max_time_gap_seconds: float = 8.0       # ignore candidates not seen recently
-    max_center_jump_px: float = 480.0       # ignore candidates too far away spatially
+    max_center_jump_px: float = 500.0       # relaxed spatial continuity constraint
     max_bbox_area_ratio: float = 2.5        # ignore candidates with wildly different scale
 
     # ---------------- Identity bookkeeping ----------------
-    id_prefix: str = ""
-    id_padding: int = 0  # e.g. 1, 2, 3, ...
+    id_prefix: str = "Person_"
+    id_padding: int = 3  # produces Person_001, Person_002, ...
 
     # ---------------- Housekeeping ----------------
     # Drop identities not seen for this long (seconds) to bound memory growth
@@ -52,3 +51,10 @@ class ReIDConfig:
 
 
 DEFAULT_CONFIG = ReIDConfig()
+
+
+def prefix_for_class(obj_class: Optional[str]) -> str:
+    """ID prefix matching the detection class: person -> 'Person_', vehicle -> 'Vehicle_'."""
+    if not obj_class:
+        return DEFAULT_CONFIG.id_prefix
+    return f"{str(obj_class).strip().capitalize()}_"

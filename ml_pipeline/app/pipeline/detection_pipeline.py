@@ -16,12 +16,27 @@ accepts all three. For single images use process_image().
 
 import time
 import cv2
+import os
+import glob
 
 from pipeline.detector import PersonDetector
 from pipeline.identity_manager import IdentityManager
 from pipeline.person_manager import PersonManager
 from pipeline.json_writer import JsonWriter
 from pipeline.reid.utils import crop_person
+
+
+def get_latest_model_path():
+    """Return path to the most recent .pt model in downloaded_model, fallback to models/best.pt."""
+    downloaded_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloaded_model")
+    if os.path.isdir(downloaded_dir):
+        pt_files = glob.glob(os.path.join(downloaded_dir, "*.pt"))
+        if pt_files:
+            # sort by modification time descending
+            pt_files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+            return pt_files[0]
+    # fallback
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "best.pt")
 
 
 class DetectionPipeline:
@@ -61,6 +76,7 @@ class DetectionPipeline:
             bboxes=bboxes,
             confidences=confidences,
             timestamp=current_time,
+            classes=[d.get("class", "person") for d in detections],
         )
 
         for det, person_id in zip(detections, person_ids):
@@ -115,7 +131,7 @@ class DetectionPipeline:
 
 if __name__ == "__main__":
     pipeline = DetectionPipeline(
-        model_path="models/best.pt",
+        model_path=get_latest_model_path(),
         reid_weights_path="models/osnet_x1_0_imagenet.pth",
         output_folder="outputs",
     )

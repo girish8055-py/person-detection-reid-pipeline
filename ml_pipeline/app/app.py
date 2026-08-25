@@ -30,15 +30,17 @@ import requests
 from flask import Flask, jsonify, render_template_string, request
 
 from pipeline.video_processor import VideoProcessor
+from pipeline.utils import get_severity_from_label, resolve_severity, ensure_detailed_suggested_action
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------- #
-MODEL_PATH = r"D:\deployment_model\ml_pipeline\app\models\best.pt"
-REID_WEIGHTS_PATH = r"D:\deployment_model\ml_pipeline\app\models\osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth"
-UPLOAD_FOLDER = r"D:\deployment_model\ml_pipeline\app\upload"
-OUTPUT_ROOT = r"D:\deployment_model\ml_pipeline\app\outputs"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "best.pt")
+REID_WEIGHTS_PATH = os.path.join(BASE_DIR, "models", "osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth")
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "upload")
+OUTPUT_ROOT = os.path.join(BASE_DIR, "outputs")
 MAX_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024  # 2 GB safety cap
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -123,30 +125,115 @@ def _run_job_local_file(job_id: str, video_path: str, csv_path: str = None):
     """
     output_folder = os.path.join(OUTPUT_ROOT, job_id)
 
+    # Determine model to use: check downloaded_model/ for the latest downloaded model, fallback to models/best.pt
+    downloaded_dir = os.path.join(BASE_DIR, "downloaded_model")
+    chosen_model = None
+    if os.path.exists(downloaded_dir):
+        pt_files = [
+            os.path.join(downloaded_dir, f)
+            for f in os.listdir(downloaded_dir)
+            if f.endswith(".pt") and os.path.isfile(os.path.join(downloaded_dir, f))
+        ]
+        if pt_files:
+            chosen_model = max(pt_files, key=os.path.getmtime)
+
+    if not chosen_model:
+        chosen_model = MODEL_PATH
+
     try:
         with processing_lock:
-            _set_job(job_id, status="processing", progress=0.0, message="Running detection pipeline...")
+            _set_job(job_id, status="processing", progress=0.0, message=f"Running detection pipeline with model {os.path.basename(chosen_model)}...")
 
             def progress_cb(pct, msg):
                 _set_job(job_id, progress=pct, message=msg)
 
             persons = processor.process_video(
-                video_path, output_folder, progress_callback=progress_cb, teledata_csv_path=csv_path
+                video_path,
+                output_folder,
+                progress_callback=progress_cb,
+                teledata_csv_path=csv_path,
+                model_path=chosen_model,
+                model_name=os.path.basename(chosen_model),
             )
             from worker.result_builder import build_result_json
+            from worker.worker import get_vlm_behavior_description_and_action
 
             payload = build_result_json(persons)
 
+            # Enrich results with VLM description and action recommendation
+            first_person_data = list(persons.values())[0] if persons else {}
+            for person_result in payload["results"]:
+                p_id_str = person_result.get("id_number")
+                p_id = None
+                if p_id_str:
+                    try:
+                        p_id = int(p_id_str)
+                    except ValueError:
+                        p_id = p_id_str
+                
+                p_data = persons.get(p_id) if p_id is not None else None
+                if not p_data:
+                    p_data = first_person_data
+                
+                kf_paths = p_data.get("keyframes", []) if p_data else []
+
+                # Severity/description/action are decided by VLM or fallback
+                if p_data and (p_data.get("description") or p_data.get("severity")):
+                    person_result["description"] = p_data.get("description", "")
+                    vlm_class = p_data.get("class")
+                    if vlm_class and vlm_class != person_result.get("class"):
+                        person_result["class"] = vlm_class
+                    sev_level, sev_label = resolve_severity(p_data.get("severity"), person_result.get("reidentification_count", 0))
+                    person_result["severity_level"] = sev_level
+                    person_result["severity"] = sev_label
+                    person_result["suggest_action"] = ensure_detailed_suggested_action(
+                        p_data.get("suggest_action", ""),
+                        sev_label,
+                        person_result.get("id_number", "target"),
+                        person_result.get("total_duration", 0),
+                        person_result.get("reidentification_count", 0)
+                    )
+                else:
+                    description, suggest_action, vlm_class, vlm_severity = get_vlm_behavior_description_and_action(person_result, kf_paths)
+                    person_result["description"] = description
+                    if vlm_class and vlm_class != person_result.get("class"):
+                        person_result["class"] = vlm_class
+
+                    sev_level, sev_label = resolve_severity(vlm_severity, person_result.get("reidentification_count", 0))
+                    person_result["severity_level"], person_result["severity"] = sev_level, sev_label
+                    person_result["suggest_action"] = ensure_detailed_suggested_action(
+                        suggest_action,
+                        sev_label,
+                        person_result.get("id_number", "target"),
+                        person_result.get("total_duration", 0),
+                        person_result.get("reidentification_count", 0)
+                    )
+
+                # Every appearance inherits the person's non-null severity.
+                for app_entry in person_result.get("appearances", []):
+                    app_entry["severity_level"] = person_result.get("severity_level")
+                    app_entry["severity"] = person_result.get("severity")
+
             print(payload)
-        summary = [
-            {
+        # Summary shown in the UI: use the non-null severity from payload
+        vlm_severity_by_id = {
+            r.get("id_number"): (r.get("severity_level"), r.get("severity"))
+            for r in payload["results"]
+        }
+        summary = []
+        for p in persons.values():
+            sev_level, sev_label = vlm_severity_by_id.get(
+                str(p["person_id"]),
+                resolve_severity(p.get("severity"), p.get("reidentification_count", 0))
+            )
+            summary.append({
                 "person_id": p["person_id"],
                 "total_duration": p["total_duration"],
                 "reidentification_count": p["reidentification_count"],
+                "severity_level": sev_level,
+                "severity": sev_label,
                 "appearances": len(p["appearances"]),
-            }
-            for p in persons.values()
-        ]
+            })
 
         _set_job(
             job_id,
@@ -154,6 +241,7 @@ def _run_job_local_file(job_id: str, video_path: str, csv_path: str = None):
             progress=100.0,
             message=f"Done. {len(summary)} unique person(s) found.",
             results=summary,
+            payload=payload,
             output_folder=output_folder,
         )
 
@@ -197,6 +285,53 @@ def start():
         jobs[job_id] = {"status": "queued", "progress": 0.0, "message": "Queued", "url": url, "csv_url": csv_url}
 
     thread = threading.Thread(target=_run_job, args=(job_id, url, csv_url), daemon=True)
+    thread.start()
+
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/start_url_with_csv", methods=["POST"])
+def start_url_with_csv():
+    url = request.form.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+
+    if processing_lock.locked():
+        return jsonify({"error": "Another video is currently processing. Please wait."}), 409
+
+    job_id = uuid.uuid4().hex[:12]
+    csv_path = None
+    csv_file = request.files.get("csv")
+    if csv_file is not None and csv_file.filename != "":
+        csv_path = os.path.join(UPLOAD_FOLDER, f"{job_id}.csv")
+        csv_file.save(csv_path)
+
+    with jobs_lock:
+        jobs[job_id] = {
+            "status": "queued",
+            "progress": 0.0,
+            "message": "Queued",
+            "url": url,
+            "csv_filename": csv_file.filename if csv_file else None,
+        }
+
+    def _run_url_job_with_local_csv():
+        video_path = os.path.join(UPLOAD_FOLDER, f"{job_id}.mp4")
+        try:
+            _download_file(url, video_path, job_id, label="video")
+        except Exception as e:
+            logger.exception("Job %s failed during video download", job_id)
+            _set_job(job_id, status="error", message=f"Download failed: {e}")
+            for p in (video_path, csv_path):
+                if p and os.path.exists(p):
+                    try:
+                        os.remove(p)
+                    except OSError:
+                        pass
+            return
+        _run_job_local_file(job_id, video_path, csv_path=csv_path)
+
+    thread = threading.Thread(target=_run_url_job_with_local_csv, daemon=True)
     thread.start()
 
     return jsonify({"job_id": job_id})
@@ -254,6 +389,13 @@ def status(job_id):
     return jsonify(job)
 
 
+@app.route("/video/<job_id>")
+def get_video(job_id):
+    from flask import send_from_directory
+    folder = os.path.join(OUTPUT_ROOT, job_id)
+    return send_from_directory(folder, "detection_annotated.mp4", mimetype="video/mp4")
+
+
 # ---------------------------------------------------------------------- #
 # Minimal single-page UI (kept inline so this is a single ready-to-run file)
 # ---------------------------------------------------------------------- #
@@ -303,7 +445,9 @@ INDEX_HTML = """
   <div class="panel" id="panelUrl">
     <label style="font-size:0.85rem; opacity:0.8;">Video URL</label>
     <input type="text" id="url" placeholder="https://example.com/video.mp4">
-    <label style="font-size:0.85rem; opacity:0.8; margin-top:10px; display:block;">Telemetry CSV URL (optional)</label>
+    <label style="font-size:0.85rem; opacity:0.8; margin-top:10px; display:block;">Telemetry CSV File from Computer (optional -- offline_teledata_*.csv)</label>
+    <input type="file" id="urlCsvFile" accept=".csv">
+    <label style="font-size:0.85rem; opacity:0.8; margin-top:10px; display:block;">OR Telemetry CSV URL (optional)</label>
     <input type="text" id="csvUrl" placeholder="https://example.com/offline_teledata_....csv">
     <br>
     <button id="startBtn" onclick="startJob()">Start</button>
@@ -358,18 +502,29 @@ async function startJob() {
     const url = document.getElementById('url').value.trim();
     if (!url) { alert('Paste a video URL first.'); return; }
 
+    const urlCsvFile = document.getElementById('urlCsvFile').files[0];
     const csvUrl = document.getElementById('csvUrl').value.trim();
 
     document.getElementById('startBtn').disabled = true;
     document.getElementById('status').style.display = 'block';
     document.getElementById('results').innerHTML = '';
 
-    const resp = await fetch('/start', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({url, csv_url: csvUrl})
-    });
-    const data = await resp.json();
+    let resp, data;
+    if (urlCsvFile) {
+        document.getElementById('msg').textContent = 'Uploading telemetry CSV...';
+        const formData = new FormData();
+        formData.append('url', url);
+        formData.append('csv', urlCsvFile);
+        resp = await fetch('/start_url_with_csv', { method: 'POST', body: formData });
+        data = await resp.json();
+    } else {
+        resp = await fetch('/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({url, csv_url: csvUrl})
+        });
+        data = await resp.json();
+    }
 
     if (!resp.ok) {
         document.getElementById('msg').innerHTML = '<span class="err">' + data.error + '</span>';
@@ -390,7 +545,7 @@ async function poll(jobId, btnId) {
     if (job.status === 'done') {
         clearInterval(pollTimer);
         document.getElementById(btnId).disabled = false;
-        renderResults(job.results);
+        renderResults(job.results, job.payload, jobId);
     } else if (job.status === 'error') {
         clearInterval(pollTimer);
         document.getElementById(btnId).disabled = false;
@@ -398,16 +553,32 @@ async function poll(jobId, btnId) {
     }
 }
 
-function renderResults(results) {
+function renderResults(results, payload, jobId) {
+    let html = '';
+    if (jobId) {
+        html += '<h3 style="margin-top:20px; font-size:1rem;">Annotated Detection Video (Verification):</h3>';
+        html += `<video controls width="100%" style="border-radius:8px; background:#000; margin-bottom:15px;" src="/video/${jobId}"></video>`;
+    }
+
     if (!results || results.length === 0) {
-        document.getElementById('results').textContent = 'No persons detected.';
-        return;
+        html += '<p>No persons detected.</p>';
+    } else {
+        const SEV_COLORS = {1: '#4caf50', 2: '#ff9800', 3: '#ff5722', 4: '#f44336'};
+        html += '<table><tr><th>Detected ID / Target</th><th>Total Duration (s)</th><th>Re-ID Count</th><th>Severity</th><th>Appearances</th></tr>';
+        for (const r of results) {
+            const sevColor = SEV_COLORS[r.severity_level] || '#777';
+            html += `<tr><td>${r.person_id}</td><td>${r.total_duration}</td><td>${r.reidentification_count}</td>`
+                + `<td><span style="background:${sevColor};color:#fff;padding:2px 10px;border-radius:10px;font-size:0.8rem;">Level ${r.severity_level} &mdash; ${r.severity}</span></td>`
+                + `<td>${r.appearances}</td></tr>`;
+        }
+        html += '</table>';
     }
-    let html = '<table><tr><th>Person ID</th><th>Total Duration (s)</th><th>Re-ID Count</th><th>Appearances</th></tr>';
-    for (const r of results) {
-        html += `<tr><td>${r.person_id}</td><td>${r.total_duration}</td><td>${r.reidentification_count}</td><td>${r.appearances}</td></tr>`;
+
+    if (payload) {
+        html += '<h3 style="margin-top:20px; font-size:1rem;">Admin Payload (JSON Output):</h3>';
+        html += '<pre style="background:#111; color:#0f0; padding:12px; border-radius:6px; max-height:300px; overflow:auto; font-size:0.85rem;">' + JSON.stringify(payload, null, 2) + '</pre>';
     }
-    html += '</table>';
+
     document.getElementById('results').innerHTML = html;
 }
 </script>
@@ -422,6 +593,6 @@ if __name__ == "__main__":
 
     app.run(
         host="0.0.0.0",
-        port=5000,
+        port=5050,
         debug=False
     )

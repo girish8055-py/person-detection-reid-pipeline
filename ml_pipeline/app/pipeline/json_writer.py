@@ -1,7 +1,7 @@
 import os
 import json
 
-from pipeline.utils import format_time, get_cardinal_direction
+from pipeline.utils import format_time, get_cardinal_direction, resolve_severity, ensure_detailed_suggested_action
 
 
 class JsonWriter:
@@ -14,25 +14,9 @@ class JsonWriter:
 
     def write(self, persons):
 
-        # <-- FOR DUMMY DATA: List of distinct classes for different IDs
-        dummy_classes = ["person", "vehicle", "car", "truck", "motorbike"]
+        for idx, (person_id, person_data) in enumerate(persons.items()):
 
-        # Generate at least 3 distinct objects with different IDs if fewer detections exist
-        expanded_persons = dict(persons)
-        if len(expanded_persons) < 3 and expanded_persons:
-            base_id = list(expanded_persons.keys())[0]
-            base_data = expanded_persons[base_id]
-            for extra_id in range(1, 4):
-                if extra_id not in expanded_persons:
-                    import copy
-                    new_person = copy.deepcopy(base_data)
-                    new_person["person_id"] = extra_id
-                    expanded_persons[extra_id] = new_person
-
-        for idx, (person_id, person_data) in enumerate(expanded_persons.items()):
-
-            # DUMMY CLASS TOGGLE: Cycle through dummy classes per ID
-            assigned_class = dummy_classes[idx % len(dummy_classes)]
+            assigned_class = person_data.get("class", "person")
 
             # -------------------------------------------------
             # Create Person Folder
@@ -44,6 +28,16 @@ class JsonWriter:
             )
 
             os.makedirs(person_folder, exist_ok=True)
+
+            reid_count = person_data.get("reidentification_count", 0)
+            sev_level, sev_label = resolve_severity(person_data.get("severity"), reid_count)
+            suggest_act = ensure_detailed_suggested_action(
+                person_data.get("suggest_action", ""),
+                sev_label,
+                str(person_id),
+                person_data.get("total_duration", 0),
+                reid_count
+            )
 
             # -------------------------------------------------
             # Convert all appearances
@@ -73,6 +67,13 @@ class JsonWriter:
                             appearance["duration"],
                             2
                         ),
+
+                    # Severity is decided by VLM / resolved fallback
+                    "severity_level":
+                        sev_level,
+
+                    "severity":
+                        sev_label,
 
                     # ---------------------------------------
                     # GPS -- present only if telemetry was
@@ -125,7 +126,19 @@ class JsonWriter:
                     ),
 
                 "reidentification_count":
-                    person_data["reidentification_count"],
+                    reid_count,
+
+                "severity_level":
+                    sev_level,
+
+                "severity":
+                    sev_label,
+
+                "description":
+                    person_data.get("description", ""),
+
+                "suggest_action":
+                    suggest_act,
 
                 "appearances":
                     appearances

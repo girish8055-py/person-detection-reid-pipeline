@@ -14,9 +14,27 @@ throws away everything else.
 
 import csv
 import logging
+import math
 import os
 from datetime import datetime, timezone
 from typing import Optional
+
+# ---------------------------------------------------------------------------
+# Camera geometry constants used for ACCURATE per-detection distance
+# estimation (pinhole model). Override via environment variables if your
+# drone camera differs.
+# ---------------------------------------------------------------------------
+DEFAULT_HFOV_DEG = float(os.getenv("DRONE_HFOV_DEG", "82.0"))
+# Real-world height assumed for the object when converting its pixel height
+# into metres of range. Person ~1.7 m standing; car body ~1.5 m tall.
+ASSUMED_REAL_HEIGHT_M = {
+    "person": float(os.getenv("PERSON_REAL_HEIGHT_M", "1.7")),
+    "vehicle": float(os.getenv("VEHICLE_REAL_HEIGHT_M", "1.5")),
+}
+DEFAULT_REAL_HEIGHT_M = 1.5
+# Sanity bounds for optical slant-range estimates (metres)
+MIN_RANGE_M = 1.0
+MAX_RANGE_M = 3000.0
 
 
 class TelemetryReader:
@@ -151,16 +169,32 @@ class TelemetryReader:
 
         self.samples.sort(key=lambda s: s[0])
 
-    def get_position(self, elapsed_seconds: float, distance_meters: float = 10.0) -> Optional[dict]:
+    def get_position(
+        self,
+        elapsed_seconds: float,
+        distance_meters: float = 10.0,
+        bbox=None,
+        frame_size=None,
+        obj_class: str = "person",
+    ) -> Optional[dict]:
         """
         Args:
             elapsed_seconds: seconds since the video started (the same
                 `current_time` value your detection pipeline already
                 computes per frame).
-            distance_meters: fallback distance between drone and person (default 10m).
+            distance_meters: last-resort fallback distance (default 10m),
+                used ONLY when neither optical estimation nor obstacle
+                telemetry is available.
+            bbox: optional (x1, y1, x2, y2) pixel bounding box of THIS
+                detection in the frame. When given, the drone-to-object
+                range is computed optically from the pinhole camera model:
+                    range = (real_object_height * focal_length_px) / bbox_height_px
+                which is far more accurate than obstacle-sensor distances.
+            frame_size: optional (width, height) of the video frame in px.
+            obj_class: "person" or "vehicle", selects assumed real height.
 
         Returns:
-            dict: {lat, lon, alt, unix_timestamp, iso_time, drone_lat, drone_lon, yaw, distance}, 
+            dict: {lat, lon, alt, unix_timestamp, iso_time, drone_lat, drone_lon, yaw, distance},
             or None if no telemetry was loaded at all.
         """
         if not self.samples or self.video_start_epoch is None:
@@ -169,20 +203,38 @@ class TelemetryReader:
         target_ts = self.video_start_epoch + elapsed_seconds
         lat, lon, alt, yaw, obs_dist, live_obs_dist = self._interpolate(target_ts)
 
-        # Decide which distance to use:
-        # 1. Use obsDist if it is a valid non-zero distance.
-        # 2. Use liveObstacleDistance if it is a valid non-zero distance.
-        # 3. Fall back to distance_meters parameter.
-        used_distance = distance_meters
-        if obs_dist > 0.0:
-            used_distance = obs_dist
-        elif live_obs_dist > 0.0:
-            used_distance = live_obs_dist
+        # ------------------------------------------------------------------
+        # Distance priority:
+        #   1. OPTICAL estimate from this exact bounding box (pinhole model)
+        #   2. obsDist telemetry (obstacle sensor -- rough, points wherever
+        #      the avoidance sensors face, not necessarily at the target)
+        #   3. liveObstacleDistance (same caveat)
+        #   4. static fallback (10 m default)
+        # ------------------------------------------------------------------
+        used_distance = None
+        optical_bearing_offset_deg = 0.0
 
-        # Calculate person's location based on drone's position, yaw/heading and selected distance
-        import math
+        if bbox is not None and frame_size is not None:
+            used_distance, optical_bearing_offset_deg = self._optical_range_and_offset(
+                bbox, frame_size, obj_class
+            )
+
+        if used_distance is None:
+            if obs_dist > 0.0:
+                used_distance = obs_dist
+            elif live_obs_dist > 0.0:
+                used_distance = live_obs_dist
+            else:
+                used_distance = distance_meters
+
+        # ------------------------------------------------------------------
+        # Project the object's GPS position from the drone. The bearing is
+        # the drone's yaw CORRECTED by the object's horizontal offset from
+        # the image centre -- an object on the left edge of the frame is NOT
+        # straight ahead of the nose.
+        # ------------------------------------------------------------------
         R = 6378137.0  # Earth's radius in meters
-        bearing = math.radians(yaw)
+        bearing = math.radians((yaw + optical_bearing_offset_deg) % 360.0)
         lat1 = math.radians(lat)
         lon1 = math.radians(lon)
 
@@ -209,6 +261,48 @@ class TelemetryReader:
             "unix_timestamp": target_ts,
             "iso_time": datetime.fromtimestamp(target_ts, tz=timezone.utc).isoformat(),
         }
+
+    @staticmethod
+    def _optical_range_and_offset(bbox, frame_size, obj_class: str):
+        """
+        Pinhole-camera range estimation for a single detection.
+
+            focal_length_px = (frame_width / 2) / tan(hfov / 2)
+            slant_range     = (assumed_real_height_m * focal_length_px) / bbox_height_px
+
+        Also returns the horizontal angle between the object and the image
+        centre so the GPS projection can be steered off raw yaw:
+
+            theta = atan2(bbox_center_x - frame_center_x, focal_length_px)
+
+        Returns:
+            (range_m: float, bearing_offset_deg: float)
+            Falls back to (None, 0.0) when the box geometry is unusable.
+        """
+        try:
+            x1, y1, x2, y2 = [float(v) for v in bbox[:4]]
+            frame_w, _frame_h = float(frame_size[0]), float(frame_size[1])
+        except (TypeError, ValueError, IndexError):
+            return None, 0.0
+
+        bbox_h = y2 - y1
+        if bbox_h <= 1 or frame_w <= 1:
+            return None, 0.0
+
+        focal_px = (frame_w / 2.0) / math.tan(math.radians(DEFAULT_HFOV_DEG / 2.0))
+
+        real_height = ASSUMED_REAL_HEIGHT_M.get(
+            str(obj_class).lower(), DEFAULT_REAL_HEIGHT_M
+        )
+        slant_range = (real_height * focal_px) / bbox_h
+
+        # Clamp to physically plausible ranges
+        slant_range = max(MIN_RANGE_M, min(MAX_RANGE_M, slant_range))
+
+        center_x = (x1 + x2) / 2.0
+        theta = math.atan2(center_x - frame_w / 2.0, focal_px)
+
+        return slant_range, math.degrees(theta)
 
     def _interpolate(self, target_ts: float):
         samples = self.samples
