@@ -144,34 +144,27 @@ def get_vlm_behavior_description_and_action(person_result, keyframe_paths):
     recon_count = person_result.get('reidentification_count', 0)
     appearances = person_result.get('appearances', [])
 
-    prompt = f"""You are the ARMY CHIEF (Chief of Army Staff) personally reviewing drone surveillance evidence. You have decades of battlefield command experience and you issue clear, decisive tactical orders.
+    prompt = f"""You are a Military Intelligence Analyst examining aerial surveillance keyframes of a detected {target_class}.
 
-IMPORTANT: Each provided image is a CROPPED view focusing ONLY on the specific detected target (Target ID {target_id}, Class: {target_class}), outlined inside a RED bounding box across sequential entry, middle, and exit timestamps. Ignore any background objects outside the red box.
+YOUR TASK:
+Provide a RICH, NATURAL SITUATIONAL DESCRIPTION (MAX 30 WORDS) of what the detected {target_class} is physically doing in the real-world scene (e.g. clothing/color/type, exact movement, terrain/location like road, field, checkpoint, loitering, turning, or passing objects).
 
-SITREP (Situation Report):
-TARGET: {target_id} | Class: {target_class}
-Duration in area of operations: {duration}s | Observed: {entry_t} to {exit_t} | Re‑appeared: {recon_count} time(s)
+NON-NEGOTIABLE DESCRIPTION RULES:
+- DO NOT mention "red box", "bounding box", "Target ID", "Class", or timestamps in the description.
+- DO NOT repeat the prompt's SITREP text.
+- Describe ONLY the physical visual scene, vehicle/person appearance, environmental context, and true real-world movement.
 
-STEP 1 — MANDATORY MOTION & THREAT SCAN:
-- Motion Context: Compare position across entry ({entry_t}) and exit ({exit_t}) timestamps. If the target changes position or is moving through the scene, describe it as MOVING/DRIVING/TRAVERSING. Do NOT describe moving vehicles/persons as "parked" or "stationary".
-- Scan the target inside the red box for WEAPONS: guns, rifles, pistols, revolvers, shotguns, AK/M4/M16 style weapons, machine guns, knives, explosives, rocket launchers.
-- Scan for HOSTILE ACTS: aiming a weapon, firing (muzzle flash, smoke, recoil pose), taking cover, dragging a casualty.
-- Scan for HOSTILE INDICATORS: military/tactical gear, body armour, helmets, ammunition magazines, holsters, uniformed combatants, attack formation.
+STEP 1 — MANDATORY WEAPON & THREAT SCAN:
+- Scan the target for WEAPONS: firearms, rifles, pistols, RPGs, explosives, knives.
+- Scan for HOSTILE ACTS or MILITARY INDICATORS: tactical gear, uniforms, body armour, aiming/firing pose.
 
-STEP 2 — COMMANDER'S DECISION:
-- Describe in ONE concise sentence (MAXIMUM 30 WORDS) the target's appearance and exact motion/activity (e.g. "Vehicle moving through sector from {entry_t} to {exit_t}") — focus ONLY on the target inside the red box. If a weapon is present or being fired, you MUST mention it explicitly.
-- AS THE ARMY CHIEF, issue a UNIQUE, SITUATION-SPECIFIC TACTICAL ACTION COMMAND (MAXIMUM 30 WORDS) for your troops based on the visual evidence and motion of this specific target. DO NOT COPY OR REPEAT GENERIC BOILERPLATE SENTENCES. Provide an action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a hyphen and a specific command tailored to what you see.
-- Assess ONE overall THREAT LEVEL using these NON-NEGOTIABLE rules:
-    * ANY firearm visible, held, aimed, or fired  -> severity MUST be "CRITICAL". An armed subject is NEVER "LOW" or "MEDIUM". No exceptions.
-    * Military/tactical gear or hostile posture without visible weapon -> at least "HIGH".
-    * Suspicious conduct only (loitering near assets, concealment, evasive behaviour) -> "HIGH".
-    * Unusual but plausibly innocent activity -> "MEDIUM".
-    * Routine civilian movement, clearly benign -> "LOW".
-- A commander who calls an armed gunman a "LOW" threat gets his soldiers killed. When in doubt, ESCALATE.
-- If the target lingers >60s without clear purpose, treat it as potential reconnaissance of our position and raise severity accordingly.
+STEP 2 — DECISION & ACTION:
+- Description: 1 concise sentence (MAX 30 WORDS) detailing the exact physical appearance, color, type, environment, and visual activity of the {target_class}.
+- Suggested Action: <ACTION_VERB> - <tactical order based on target activity, MAX 30 WORDS> (Verb must be MONITOR, TRACK, ALERT, or DETAIN).
+- Severity: LOW, MEDIUM, HIGH, or CRITICAL based on threat/weapon presence.
 
-RESPOND IN VALID JSON ONLY (no markdown, no extra text):
-{{"verified_class":"{target_class}","description":"<one concise specific sentence description, max 30 words>","suggested_action":"<ACTION_VERB> - <unique tactical command based on visual evidence, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
+RESPOND IN VALID JSON ONLY:
+{{"verified_class":"{target_class}","description":"<rich situational description of physical scene and movement, max 30 words>","suggested_action":"<ACTION_VERB> - <tactical command, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
 """
 
     payload = {
