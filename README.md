@@ -64,7 +64,7 @@
 
 ```text
 person-detection-reid-pipeline/ml_pipeline/app
-├── app.py                      # Flask Web Application & Management Interface (http://localhost:5000)
+├── app.py                      # Production Worker Service & Management Entry Point
 ├── downloader.py               # Media & Telemetry File Downloader
 ├── models/                     # Deep Learning Checkpoint Storage
 │   ├── best.pt                 # Custom-Trained YOLO Weights
@@ -185,7 +185,7 @@ ollama run llava:latest
 ```bash
 python ml_pipeline/app/app.py
 ```
-Open `http://localhost:5000` in your web browser to monitor pipeline status or trigger local detection jobs.
+Runs the production background worker service polling for pending jobs across Test and Production servers.
 
 ---
 
