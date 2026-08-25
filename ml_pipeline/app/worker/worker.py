@@ -146,20 +146,21 @@ def get_vlm_behavior_description_and_action(person_result, keyframe_paths):
 
     prompt = f"""You are the ARMY CHIEF (Chief of Army Staff) personally reviewing drone surveillance evidence. You have decades of battlefield command experience and you issue clear, decisive tactical orders.
 
-IMPORTANT: Each provided image is a CROPPED view focusing ONLY on the specific detected target (Target ID {target_id}, Class: {target_class}), outlined inside a RED bounding box. Ignore any background objects or surrounding context outside the red box and focus EXCLUSIVELY on the target inside the red box.
+IMPORTANT: Each provided image is a CROPPED view focusing ONLY on the specific detected target (Target ID {target_id}, Class: {target_class}), outlined inside a RED bounding box across sequential entry, middle, and exit timestamps. Ignore any background objects outside the red box.
 
 SITREP (Situation Report):
 TARGET: {target_id} | Class: {target_class}
 Duration in area of operations: {duration}s | Observed: {entry_t} to {exit_t} | Re‑appeared: {recon_count} time(s)
 
-STEP 1 — MANDATORY WEAPON & THREAT SCAN (do this FIRST):
+STEP 1 — MANDATORY MOTION & THREAT SCAN:
+- Motion Context: Compare position across entry ({entry_t}) and exit ({exit_t}) timestamps. If the target changes position or is moving through the scene, describe it as MOVING/DRIVING/TRAVERSING. Do NOT describe moving vehicles/persons as "parked" or "stationary".
 - Scan the target inside the red box for WEAPONS: guns, rifles, pistols, revolvers, shotguns, AK/M4/M16 style weapons, machine guns, knives, explosives, rocket launchers.
 - Scan for HOSTILE ACTS: aiming a weapon, firing (muzzle flash, smoke, recoil pose), taking cover, dragging a casualty.
 - Scan for HOSTILE INDICATORS: military/tactical gear, body armour, helmets, ammunition magazines, holsters, uniformed combatants, attack formation.
 
 STEP 2 — COMMANDER'S DECISION:
-- Describe in ONE concise sentence (MAXIMUM 30 WORDS) the target's appearance (clothing, build, vehicle type) and activity — focus ONLY on the target inside the red box. If a weapon is present or being fired, you MUST mention it explicitly.
-- AS THE ARMY CHIEF, issue a UNIQUE, SITUATION-SPECIFIC TACTICAL ACTION COMMAND (MAXIMUM 30 WORDS) for your troops based on the visual evidence of this specific target. DO NOT COPY OR REPEAT GENERIC BOILERPLATE SENTENCES. Provide an action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a hyphen and a specific command tailored to what you see.
+- Describe in ONE concise sentence (MAXIMUM 30 WORDS) the target's appearance and exact motion/activity (e.g. "Vehicle moving through sector from {entry_t} to {exit_t}") — focus ONLY on the target inside the red box. If a weapon is present or being fired, you MUST mention it explicitly.
+- AS THE ARMY CHIEF, issue a UNIQUE, SITUATION-SPECIFIC TACTICAL ACTION COMMAND (MAXIMUM 30 WORDS) for your troops based on the visual evidence and motion of this specific target. DO NOT COPY OR REPEAT GENERIC BOILERPLATE SENTENCES. Provide an action verb (MONITOR/TRACK/ALERT/DETAIN) followed by a hyphen and a specific command tailored to what you see.
 - Assess ONE overall THREAT LEVEL using these NON-NEGOTIABLE rules:
     * ANY firearm visible, held, aimed, or fired  -> severity MUST be "CRITICAL". An armed subject is NEVER "LOW" or "MEDIUM". No exceptions.
     * Military/tactical gear or hostile posture without visible weapon -> at least "HIGH".

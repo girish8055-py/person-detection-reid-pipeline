@@ -13,10 +13,9 @@ import torch
 @dataclass
 class ReIDConfig:
     # ---------------- Model ----------------
-    model_name: str = "osnet_x1_0"
-    # Path to a local .pth checkpoint. If None, the extractor will try to
-    # download the official pretrained weights on first use.
-    weights_path: str = "weights/osnet_x1_0_imagenet.pth"
+    model_name: str = "osnet_ain_x1_0"
+    # Path to a local .pth checkpoint.
+    weights_path: str = "weights/osnet_ain_x1_0_msmt17.pth"
     embedding_dim: int = 512
     input_size: Tuple[int, int] = (256, 128)  # (height, width), OSNet default
 
@@ -25,20 +24,19 @@ class ReIDConfig:
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-# ---------------- Matching ----------------
-    similarity_threshold: float = 0.4
+    similarity_threshold: float = 0.28
     # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 
     # ---------------- Embedding smoothing ----------------
     # new_embedding = (1 - ema_alpha) * old_embedding + ema_alpha * current_embedding
-    ema_alpha: float = 0.4
+    ema_alpha: float = 0.35
 
     # ---------------- Spatio-temporal gating (optional, off by default) ----------------
     use_spatiotemporal_gating: bool = False
-    max_time_gap_seconds: float = 8.0       # ignore candidates not seen recently
-    max_center_jump_px: float = 500.0       # relaxed spatial continuity constraint
-    max_bbox_area_ratio: float = 2.5        # ignore candidates with wildly different scale
+    max_time_gap_seconds: float = 12.0      # ignore candidates not seen recently
+    max_center_jump_px: float = 600.0       # relaxed spatial continuity constraint
+    max_bbox_area_ratio: float = 3.0        # ignore candidates with wildly different scale
 
     # ---------------- Identity bookkeeping ----------------
     id_prefix: str = "Person_"
@@ -54,7 +52,8 @@ DEFAULT_CONFIG = ReIDConfig()
 
 
 def prefix_for_class(obj_class: Optional[str]) -> str:
-    """ID prefix matching the detection class: person -> 'Person_', vehicle -> 'Vehicle_'."""
+    """Dynamic ID prefix matching ANY detection class (Person_, Vehicle_, Drone_, Boat_, etc.)."""
     if not obj_class:
         return DEFAULT_CONFIG.id_prefix
-    return f"{str(obj_class).strip().capitalize()}_"
+    clean_cls = str(obj_class).strip().replace(" ", "_").capitalize()
+    return f"{clean_cls}_"
