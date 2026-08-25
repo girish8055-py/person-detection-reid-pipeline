@@ -636,9 +636,18 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                 
                 kf_paths = p_data.get("keyframes", []) if p_data else []
 
-                # Severity/description/action are decided by VLM or resolved fallback
+                # description = VLM's visual observation of the detected object's behaviour.
+                # It is always written by VLM from keyframe images in video_processor.py
+                # then carried forward here unchanged. It is NEVER overwritten with a template.
+                p_obj_class = (p_data.get("class") or person_result.get("class") or "person") if p_data else person_result.get("class", "person")
+
                 if p_data and (p_data.get("description") or p_data.get("severity")):
+                    # VLM already ran during video processing — use its description and action directly.
                     person_result["description"] = limit_text_words(p_data.get("description", ""), 30)
+                    vlm_class = p_data.get("class")
+                    if vlm_class and vlm_class != person_result.get("class"):
+                        person_result["class"] = vlm_class
+                        p_obj_class = vlm_class
                     sev_level, sev_label = resolve_severity(p_data.get("severity"), person_result.get("reidentification_count", 0))
                     person_result["severity_level"] = sev_level
                     person_result["severity"] = sev_label
@@ -647,14 +656,16 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                         sev_label,
                         person_result.get("id_number", "target"),
                         person_result.get("total_duration", 0),
-                        person_result.get("reidentification_count", 0)
+                        person_result.get("reidentification_count", 0),
+                        obj_class=p_obj_class
                     )
-                    vlm_class = p_data.get("class")
-                    if vlm_class and vlm_class != person_result.get("class"):
-                        person_result["class"] = vlm_class
                 else:
+                    # VLM not yet called — call it now with the keyframes.
                     description, suggest_action, vlm_class, vlm_severity = get_vlm_behavior_description_and_action(person_result, kf_paths)
                     person_result["description"] = limit_text_words(description, 30)
+                    if vlm_class and vlm_class != person_result.get("class"):
+                        person_result["class"] = vlm_class
+                        p_obj_class = vlm_class
                     sev_level, sev_label = resolve_severity(vlm_severity, person_result.get("reidentification_count", 0))
                     person_result["severity_level"], person_result["severity"] = sev_level, sev_label
                     person_result["suggest_action"] = ensure_detailed_suggested_action(
@@ -662,10 +673,9 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                         sev_label,
                         person_result.get("id_number", "target"),
                         person_result.get("total_duration", 0),
-                        person_result.get("reidentification_count", 0)
+                        person_result.get("reidentification_count", 0),
+                        obj_class=p_obj_class
                     )
-                    if vlm_class and vlm_class != person_result.get("class"):
-                        person_result["class"] = vlm_class
 
                 # Every appearance inherits the person's non-null severity.
                 for app_entry in person_result.get("appearances", []):
