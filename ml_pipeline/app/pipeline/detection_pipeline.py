@@ -27,15 +27,7 @@ from pipeline.reid.utils import crop_person
 
 
 def get_latest_model_path():
-    """Return path to the most recent .pt model in downloaded_model, fallback to models/best.pt."""
-    downloaded_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloaded_model")
-    if os.path.isdir(downloaded_dir):
-        pt_files = glob.glob(os.path.join(downloaded_dir, "*.pt"))
-        if pt_files:
-            # sort by modification time descending
-            pt_files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-            return pt_files[0]
-    # fallback
+    """Return path to models/best.pt."""
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "best.pt")
 
 

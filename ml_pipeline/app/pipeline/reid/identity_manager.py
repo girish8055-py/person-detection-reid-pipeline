@@ -68,6 +68,13 @@ class IdentityManager:
 
         # 1. Fast path: tracker_id already known to us (same class only).
         existing = self.db.get_by_tracker_id(tracker_id, camera_id=camera_id, obj_class=obj_class)
+        if existing is None and obj_class == "vehicle":
+            # Check if tracker_id was previously recorded as "person" before vehicle was confirmed
+            prev_rec = self.db.get_by_tracker_id(tracker_id, camera_id=camera_id, obj_class=None)
+            if prev_rec is not None and prev_rec.obj_class != "vehicle":
+                prev_rec.obj_class = "vehicle"
+                existing = prev_rec
+
         if existing is not None:
             self.db.smooth_update(
                 existing.global_id, embedding, tracker_id, bbox, confidence, ts,

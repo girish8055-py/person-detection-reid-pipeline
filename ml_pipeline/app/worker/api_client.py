@@ -12,7 +12,7 @@ TEST_BASE_URL = "http://114.143.215.196:5005/AeroMegh/idms"
 PROD_BASE_URL = "https://idmsapi.aerogcs.com/AeroMegh/idms"
 
 # For backwards compatibility
-BASE_URL = TEST_BASE_URL
+BASE_URL = PROD_BASE_URL
 PENDING_API = f"{BASE_URL}/detection/pending"
 
 # --------------------------------------------------------
@@ -27,7 +27,7 @@ HEADERS = {
 # Fetch Pending Job
 # --------------------------------------------------------
 
-def fetch_active_model_url(base_url=TEST_BASE_URL):
+def fetch_active_model_url(base_url=PROD_BASE_URL):
     try:
         url = f"{base_url}/models?is_active=true"
         response = requests.get(url, timeout=30)
@@ -67,7 +67,7 @@ def fetch_active_model_url(base_url=TEST_BASE_URL):
 # Fetch Pending Job
 # --------------------------------------------------------
 
-def fetch_pending_job(base_url=TEST_BASE_URL):
+def fetch_pending_job(base_url=PROD_BASE_URL):
     try:
         pending_api = f"{base_url}/detection/pending"
         response = requests.get(pending_api, timeout=30)
@@ -129,7 +129,7 @@ def fetch_pending_job(base_url=TEST_BASE_URL):
 # Update Task Status
 # --------------------------------------------------------
 
-def update_status(task_id, status, base_url=TEST_BASE_URL):
+def update_status(task_id, status, base_url=PROD_BASE_URL):
     try:
         url = f"{base_url}/detection/update/{task_id}"
 
@@ -156,9 +156,12 @@ def update_status(task_id, status, base_url=TEST_BASE_URL):
 # Update Completed
 # --------------------------------------------------------
 
-def update_completed(task_id, results, files=None, file_sizes=None, base_url=TEST_BASE_URL):
+def update_completed(task_id, results, files=None, file_sizes=None, base_url=PROD_BASE_URL):
     try:
         url = f"{base_url}/detection/update/{task_id}"
+
+        # First guarantee task status is updated to COMPLETED on server
+        update_status(task_id, "COMPLETED", base_url=base_url)
 
         if files:
             try:
@@ -166,9 +169,10 @@ def update_completed(task_id, results, files=None, file_sizes=None, base_url=TES
                 if "Content-Type" in headers:
                     del headers["Content-Type"]
                 
-                # Gather form data, including file sizes
+                # Gather form data, explicitly including status
                 data = {
                     "status": "COMPLETED",
+                    "task_id": task_id,
                     "results": json.dumps(results),
                 }
                 if file_sizes:
@@ -190,21 +194,26 @@ def update_completed(task_id, results, files=None, file_sizes=None, base_url=TES
             except Exception as multipart_err:
                 logger.warning("Failed to upload files via multipart: %s. Falling back to JSON-only update.", multipart_err)
 
+        res_obj = {
+            "status": "COMPLETED",
+            "task_id": task_id,
+            "results": results,
+        }
+
         response = requests.put(
             url,
-            json={
-                "status": "COMPLETED",
-                "results": results,
-            },
+            json=res_obj,
             headers=HEADERS,
             timeout=120,
         )
 
         response.raise_for_status()
-        logger.info("Task %s Completed", task_id)
+        logger.info("Task %s Completed and results sent successfully.", task_id)
         return True
 
     except requests.exceptions.RequestException as req_err:
+        # Fallback explicit status call
+        update_status(task_id, "COMPLETED", base_url=base_url)
         logger.warning("Could not update completion status for task %s on %s: %s", task_id, base_url, req_err)
         return False
     except Exception as e:
@@ -216,7 +225,7 @@ def update_completed(task_id, results, files=None, file_sizes=None, base_url=TES
 # Update Failed
 # --------------------------------------------------------
 
-def update_failed(task_id, message="Processing Failed", base_url=TEST_BASE_URL):
+def update_failed(task_id, message="Processing Failed", base_url=PROD_BASE_URL):
     try:
         url = f"{base_url}/detection/update/{task_id}"
 

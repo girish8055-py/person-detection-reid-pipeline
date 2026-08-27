@@ -113,6 +113,10 @@ class PersonManager:
                     person["entry_bbox"] = bbox
                     person["start_frame"] = frame_num
 
+                # Update class if vehicle is detected or if higher confidence
+                if detected_class == "vehicle" and person.get("class") != "vehicle":
+                    person["class"] = "vehicle"
+
                 person["last_seen"] = current_time
 
             # Always keep the latest position & metadata

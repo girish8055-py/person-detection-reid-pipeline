@@ -24,7 +24,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------- #
-DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "base__finetuned__Run__9_.pt")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "best.pt")
 MODEL_PATH = DEFAULT_MODEL if os.path.exists(DEFAULT_MODEL) else os.path.join(BASE_DIR, "models", "best.pt")
 REID_WEIGHTS_PATH = os.path.join(
     BASE_DIR,
@@ -41,7 +42,7 @@ os.makedirs(OUTPUT_ROOT, exist_ok=True)
 processor = VideoProcessor(
     model_path=MODEL_PATH,
     reid_weights_path=REID_WEIGHTS_PATH,
-    confidence=0.5,
+    confidence=0.25,
     target_fps=10,
 )
 

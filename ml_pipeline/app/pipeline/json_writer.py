@@ -111,13 +111,8 @@ class JsonWriter:
                 "id_number":
                     str(person_data["person_id"]),
 
-                # <-- USE THIS LINE FOR DUMMY DATA (Different class for each different ID)
                 "class":
                     assigned_class,
-
-                # <-- USE THIS LINE FOR ORIGINAL REAL DATA (Uncomment line below & comment line above)
-                # "class":
-                #     person_data.get("class", "person"),
 
                 "total_duration":
                     round(

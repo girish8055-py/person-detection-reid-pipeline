@@ -28,7 +28,8 @@ screenshot_manager = ScreenshotManager(output_folder=output_folder)
 # -------------------------------------------------------
 # Paths
 # -------------------------------------------------------
-MODEL_PATH = os.path.join(BASE_DIR, "models", "best.pt")
+DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "best.pt")
+MODEL_PATH = DEFAULT_MODEL if os.path.exists(DEFAULT_MODEL) else os.path.join(BASE_DIR, "models", "best.pt")
 VIDEO_PATH = os.path.join(BASE_DIR, "1.mp4")
 
 # -------------------------------------------------------
@@ -36,7 +37,7 @@ VIDEO_PATH = os.path.join(BASE_DIR, "1.mp4")
 # -------------------------------------------------------
 detector = PersonDetector(
     model_path=MODEL_PATH,
-    confidence=0.5
+    confidence=0.15
 )
 
 # -------------------------------------------------------

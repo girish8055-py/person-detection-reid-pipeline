@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "base__finetuned__Run__9_.pt")
+DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "best.pt")
 MODEL_PATH = DEFAULT_MODEL if os.path.exists(DEFAULT_MODEL) else os.path.join(BASE_DIR, "models", "best.pt")
 REID_WEIGHTS_PATH = os.path.join(
     BASE_DIR,
@@ -46,7 +46,7 @@ test_app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 * 1024
 processor = VideoProcessor(
     model_path=MODEL_PATH,
     reid_weights_path=REID_WEIGHTS_PATH,
-    confidence=0.5,
+    confidence=0.25,
     target_fps=10,
 )
 
@@ -85,17 +85,18 @@ def _download_file(url: str, dest_path: str, job_id: str, label: str = "file") -
 def _run_job_local_file(job_id: str, video_path: str, csv_path: str = None):
     output_folder = os.path.join(OUTPUT_ROOT, job_id)
     downloaded_dir = os.path.join(BASE_DIR, "downloaded_model")
-    chosen_model = None
-    if os.path.exists(downloaded_dir):
-        pt_files = [
-            os.path.join(downloaded_dir, f)
-            for f in os.listdir(downloaded_dir)
-            if f.endswith(".pt") and os.path.isfile(os.path.join(downloaded_dir, f))
-        ]
-        if pt_files:
-            chosen_model = max(pt_files, key=os.path.getmtime)
+    chosen_model = os.path.join(downloaded_dir, "best.pt")
+    if not os.path.exists(chosen_model):
+        if os.path.exists(downloaded_dir):
+            pt_files = [
+                os.path.join(downloaded_dir, f)
+                for f in os.listdir(downloaded_dir)
+                if f.endswith(".pt") and os.path.isfile(os.path.join(downloaded_dir, f))
+            ]
+            if pt_files:
+                chosen_model = max(pt_files, key=os.path.getmtime)
 
-    if not chosen_model:
+    if not chosen_model or not os.path.exists(chosen_model):
         chosen_model = MODEL_PATH
 
     try:

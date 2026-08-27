@@ -1,2446 +1,1221 @@
 {
     "status": "COMPLETED",
-    "task_id": "8ba4a3e7-1b46-4728-8218-188c047a9fa6",
+    "task_id": "9a0c8602-f3c1-4833-9420-866d86fb7ac5",
     "results": [
         {
             "id_number": "Vehicle_001",
             "class": "vehicle",
-            "entry_time": "00:00:02",
-            "exit_time": "00:02:16",
-            "total_duration": 83.13,
-            "reidentification_count": 19,
+            "entry_time": "00:00:00",
+            "exit_time": "00:00:20",
+            "total_duration": 17.6,
+            "reidentification_count": 6,
             "severity_level": 3,
             "severity": "HIGH",
-            "description": "A vehicle is parked in an open field with a barren landscape in the background. The vehicle is stationary and there is no visible weaponry or hostile posture. The area appears to be a rural or semi-rural setting with no immediate signs of military activity or reconnaissance.",
-            "suggest_action": "ALERT - Raise perimeter force readiness and dispatch patrol to monitor subject loitering near sector. Severity: HIGH. The presence of a vehicle in a potentially sensitive area may indicate reconnaissance or surveillance activity. It is important to maintain a heightened state of readiness and to monitor the situation closely to ensure the safety of our assets and personnel.",
+            "description": "The image features a red fire hydrant prominently in the foreground. It is a standard, cylindrical hydrant with a red body and a white top, which is typical for fire.",
+            "suggest_action": "Monitor - Keep an eye on the hydrant for any unusual activity or maintenance needs.",
             "evidence": {
-                "file_name": "Vehicle_001_2026-07-02T08_10_14.466667_00_00.jpg",
-                "file_size": 379050,
-                "file_url": "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237/threatimages/ec2dd1a6-acd8-42ce-af00-00bf7020a6a5/Vehicle_001_2026-07-02T08_10_14.466667_00_00.jpg"
+                "file_name": "Vehicle_001_2026-08-26T07_04_04.866667_00_00.jpg",
+                "file_size": 830255,
+                "file_url": "https://pdrlimage.blob.core.windows.net/user-694fd387-919a-4455-a194-a17a59a4e713/threatimages/f5d613dd-6b88-43eb-acd1-c80cda982d9d/Vehicle_001_2026-08-26T07_04_04.866667_00_00.jpg"
             },
             "appearances": [
                 {
                     "appearance_id": 1,
-                    "entry_time": "00:00:02",
-                    "exit_time": "00:00:30",
-                    "duration": 28.4,
-                    "confidence": 0.75,
+                    "entry_time": "00:00:00",
+                    "exit_time": "00:00:00",
+                    "duration": 0.0,
+                    "confidence": 0.27,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9595353,
-                        "lon": 73.6774677,
-                        "alt": 0.16,
-                        "distance": 45.94,
-                        "heading": 9.01,
+                        "lat": 19.9938826,
+                        "lon": 73.7515428,
+                        "alt": -0.15,
+                        "distance": 5.81,
+                        "heading": 342.52,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.959527,
-                        "lon": 73.6776151,
-                        "alt": 19.79,
-                        "distance": 12.67,
-                        "heading": 10.38,
+                        "lat": 19.9938826,
+                        "lon": 73.7515428,
+                        "alt": -0.15,
+                        "distance": 5.81,
+                        "heading": 342.52,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 0,
-                        "y": 81,
-                        "width": 17,
-                        "height": 8
+                        "x": 783,
+                        "y": 313,
+                        "width": 57,
+                        "height": 190
                     },
                     "frame_range": {
-                        "start": 72,
-                        "end": 924
+                        "start": 3,
+                        "end": 3
                     }
                 },
                 {
                     "appearance_id": 2,
-                    "entry_time": "00:00:32",
-                    "exit_time": "00:00:33",
-                    "duration": 0.4,
-                    "confidence": 0.61,
+                    "entry_time": "00:00:00",
+                    "exit_time": "00:00:01",
+                    "duration": 0.5,
+                    "confidence": 0.44,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9595377,
-                        "lon": 73.6776256,
-                        "alt": 19.96,
-                        "distance": 14.14,
-                        "heading": 11.56,
+                        "lat": 19.9943026,
+                        "lon": 73.751529,
+                        "alt": -0.15,
+                        "distance": 52.59,
+                        "heading": 342.53,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9595418,
-                        "lon": 73.6776299,
-                        "alt": 20.03,
-                        "distance": 14.7,
-                        "heading": 11.82,
+                        "lat": 19.9943262,
+                        "lon": 73.7515268,
+                        "alt": -0.1,
+                        "distance": 55.22,
+                        "heading": 342.54,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 209,
-                        "y": 120,
-                        "width": 38,
-                        "height": 26
+                        "x": 835,
+                        "y": 273,
+                        "width": 16,
+                        "height": 21
                     },
                     "frame_range": {
-                        "start": 984,
-                        "end": 996
+                        "start": 27,
+                        "end": 42
                     }
                 },
                 {
                     "appearance_id": 3,
-                    "entry_time": "00:01:00",
-                    "exit_time": "00:01:28",
-                    "duration": 28.0,
-                    "confidence": 0.54,
+                    "entry_time": "00:00:01",
+                    "exit_time": "00:00:08",
+                    "duration": 6.4,
+                    "confidence": 0.37,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9599644,
-                        "lon": 73.6775761,
-                        "alt": 26.65,
-                        "distance": 61.26,
-                        "heading": 0.1,
+                        "lat": 19.9943522,
+                        "lon": 73.7515243,
+                        "alt": -0.04,
+                        "distance": 58.12,
+                        "heading": 342.54,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9598168,
-                        "lon": 73.6777054,
-                        "alt": 29.43,
-                        "distance": 45.94,
-                        "heading": 359.61,
+                        "lat": 19.994352,
+                        "lon": 73.7515257,
+                        "alt": -0.01,
+                        "distance": 58.12,
+                        "heading": 342.53,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 201,
-                        "y": 115,
-                        "width": 10,
-                        "height": 6
+                        "x": 831,
+                        "y": 274,
+                        "width": 16,
+                        "height": 19
                     },
                     "frame_range": {
-                        "start": 1812,
-                        "end": 2652
+                        "start": 57,
+                        "end": 249
                     }
                 },
                 {
                     "appearance_id": 4,
-                    "entry_time": "00:01:29",
-                    "exit_time": "00:01:29",
-                    "duration": 0.0,
-                    "confidence": 0.62,
+                    "entry_time": "00:00:08",
+                    "exit_time": "00:00:13",
+                    "duration": 5.4,
+                    "confidence": 0.31,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.960225,
-                        "lon": 73.6777761,
-                        "alt": 29.44,
-                        "distance": 91.89,
-                        "heading": 359.61,
+                        "lat": 19.9943519,
+                        "lon": 73.7515253,
+                        "alt": -0.01,
+                        "distance": 58.12,
+                        "heading": 342.53,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.960225,
-                        "lon": 73.6777761,
-                        "alt": 29.44,
-                        "distance": 91.89,
-                        "heading": 359.61,
+                        "lat": 19.9943018,
+                        "lon": 73.7515283,
+                        "alt": 0.17,
+                        "distance": 52.59,
+                        "heading": 342.52,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 260,
-                        "y": 0,
-                        "width": 15,
-                        "height": 4
+                        "x": 833,
+                        "y": 273,
+                        "width": 18,
+                        "height": 19
                     },
                     "frame_range": {
-                        "start": 2682,
-                        "end": 2682
+                        "start": 258,
+                        "end": 420
                     }
                 },
                 {
                     "appearance_id": 5,
-                    "entry_time": "00:01:29",
-                    "exit_time": "00:01:44",
-                    "duration": 14.8,
-                    "confidence": 0.66,
+                    "entry_time": "00:00:14",
+                    "exit_time": "00:00:15",
+                    "duration": 1.1,
+                    "confidence": 0.29,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.960225,
-                        "lon": 73.6777756,
-                        "alt": 29.46,
-                        "distance": 91.89,
-                        "heading": 359.48,
+                        "lat": 19.9943253,
+                        "lon": 73.751527,
+                        "alt": 0.18,
+                        "distance": 55.22,
+                        "heading": 342.5,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9598656,
-                        "lon": 73.6774366,
-                        "alt": 29.4,
-                        "distance": 52.51,
-                        "heading": 359.45,
+                        "lat": 19.9943251,
+                        "lon": 73.7515264,
+                        "alt": 0.17,
+                        "distance": 55.22,
+                        "heading": 342.51,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 261,
-                        "y": 0,
-                        "width": 14,
-                        "height": 4
+                        "x": 834,
+                        "y": 272,
+                        "width": 17,
+                        "height": 20
                     },
                     "frame_range": {
-                        "start": 2694,
-                        "end": 3138
+                        "start": 444,
+                        "end": 477
                     }
                 },
                 {
                     "appearance_id": 6,
-                    "entry_time": "00:01:44",
-                    "exit_time": "00:01:44",
-                    "duration": 0.0,
-                    "confidence": 0.57,
+                    "entry_time": "00:00:16",
+                    "exit_time": "00:00:18",
+                    "duration": 2.5,
+                    "confidence": 0.36,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9598652,
-                        "lon": 73.6774363,
-                        "alt": 29.36,
-                        "distance": 52.51,
-                        "heading": 359.64,
+                        "lat": 19.9943512,
+                        "lon": 73.751526,
+                        "alt": 0.17,
+                        "distance": 58.12,
+                        "heading": 342.51,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9598652,
-                        "lon": 73.6774363,
-                        "alt": 29.36,
-                        "distance": 52.51,
-                        "heading": 359.64,
+                        "lat": 19.9943509,
+                        "lon": 73.7515247,
+                        "alt": 0.2,
+                        "distance": 58.12,
+                        "heading": 342.48,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 130,
-                        "y": 111,
-                        "width": 11,
-                        "height": 7
+                        "x": 835,
+                        "y": 273,
+                        "width": 16,
+                        "height": 19
                     },
                     "frame_range": {
-                        "start": 3147,
-                        "end": 3147
+                        "start": 486,
+                        "end": 561
                     }
                 },
                 {
                     "appearance_id": 7,
-                    "entry_time": "00:01:52",
-                    "exit_time": "00:01:55",
-                    "duration": 3.0,
-                    "confidence": 0.59,
+                    "entry_time": "00:00:18",
+                    "exit_time": "00:00:20",
+                    "duration": 1.7,
+                    "confidence": 0.31,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9598337,
-                        "lon": 73.6774133,
-                        "alt": 27.41,
-                        "distance": 52.51,
-                        "heading": 356.86,
+                        "lat": 19.9943509,
+                        "lon": 73.7515247,
+                        "alt": 0.2,
+                        "distance": 58.12,
+                        "heading": 342.49,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9597943,
-                        "lon": 73.6774747,
-                        "alt": 24.59,
-                        "distance": 52.51,
-                        "heading": 357.38,
+                        "lat": 19.994301,
+                        "lon": 73.7515263,
+                        "alt": 0.25,
+                        "distance": 52.59,
+                        "heading": 342.48,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 127,
-                        "y": 111,
-                        "width": 12,
-                        "height": 7
+                        "x": 833,
+                        "y": 273,
+                        "width": 18,
+                        "height": 19
                     },
                     "frame_range": {
-                        "start": 3375,
-                        "end": 3465
+                        "start": 567,
+                        "end": 615
                     }
-                },
+                }
+            ]
+        },
+        {
+            "id_number": "Person_001",
+            "class": "vehicle",
+            "entry_time": "00:00:00",
+            "exit_time": "00:00:16",
+            "total_duration": 2.6,
+            "reidentification_count": 7,
+            "severity_level": 3,
+            "severity": "HIGH",
+            "description": "The image shows a scene with a man standing in the center, wearing a white shirt. He appears to be in a casual stance, with his hands by his sides.",
+            "suggest_action": "Monitor - Keep an eye on the man's activities and movements to ensure public safety.",
+            "evidence": {
+                "file_name": "Person_001_2026-08-26T07_04_02.166667_00_00.jpg",
+                "file_size": 817931,
+                "file_url": "https://pdrlimage.blob.core.windows.net/user-694fd387-919a-4455-a194-a17a59a4e713/threatimages/f5d613dd-6b88-43eb-acd1-c80cda982d9d/Person_001_2026-08-26T07_04_02.166667_00_00.jpg"
+            },
+            "appearances": [
                 {
-                    "appearance_id": 8,
-                    "entry_time": "00:01:56",
-                    "exit_time": "00:01:56",
+                    "appearance_id": 1,
+                    "entry_time": "00:00:00",
+                    "exit_time": "00:00:00",
                     "duration": 0.0,
-                    "confidence": 0.5,
+                    "confidence": 0.46,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9597805,
-                        "lon": 73.6774841,
-                        "alt": 23.69,
-                        "distance": 52.51,
-                        "heading": 357.29,
+                        "lat": 19.9938886,
+                        "lon": 73.7515424,
+                        "alt": -0.15,
+                        "distance": 6.48,
+                        "heading": 342.53,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9597805,
-                        "lon": 73.6774841,
-                        "alt": 23.69,
-                        "distance": 52.51,
-                        "heading": 357.29,
+                        "lat": 19.9938886,
+                        "lon": 73.7515424,
+                        "alt": -0.15,
+                        "distance": 6.48,
+                        "heading": 342.53,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 126,
-                        "y": 112,
-                        "width": 11,
-                        "height": 7
+                        "x": 784,
+                        "y": 313,
+                        "width": 58,
+                        "height": 193
                     },
                     "frame_range": {
-                        "start": 3486,
-                        "end": 3486
+                        "start": 21,
+                        "end": 21
                     }
                 },
                 {
-                    "appearance_id": 9,
-                    "entry_time": "00:01:56",
-                    "exit_time": "00:01:58",
-                    "duration": 2.4,
-                    "confidence": 0.55,
+                    "appearance_id": 2,
+                    "entry_time": "00:00:01",
+                    "exit_time": "00:00:01",
+                    "duration": 0.0,
+                    "confidence": 0.28,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9597724,
-                        "lon": 73.6774983,
-                        "alt": 23.29,
-                        "distance": 52.51,
-                        "heading": 358.39,
+                        "lat": 19.9943522,
+                        "lon": 73.7515247,
+                        "alt": -0.06,
+                        "distance": 58.12,
+                        "heading": 342.54,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9597371,
-                        "lon": 73.6775226,
-                        "alt": 22.56,
-                        "distance": 52.51,
-                        "heading": 359.57,
+                        "lat": 19.9943522,
+                        "lon": 73.7515247,
+                        "alt": -0.06,
+                        "distance": 58.12,
+                        "heading": 342.54,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 126,
-                        "y": 112,
-                        "width": 11,
-                        "height": 7
+                        "x": 827,
+                        "y": 274,
+                        "width": 25,
+                        "height": 19
                     },
                     "frame_range": {
-                        "start": 3498,
-                        "end": 3570
+                        "start": 51,
+                        "end": 51
                     }
                 },
                 {
-                    "appearance_id": 10,
-                    "entry_time": "00:01:59",
-                    "exit_time": "00:02:03",
-                    "duration": 4.1,
+                    "appearance_id": 3,
+                    "entry_time": "00:00:08",
+                    "exit_time": "00:00:09",
+                    "duration": 1.7,
+                    "confidence": 0.34,
+                    "severity_level": 3,
+                    "severity": "HIGH",
+                    "entry_location": {
+                        "lat": 19.9943665,
+                        "lon": 73.751681,
+                        "alt": -0.01,
+                        "distance": 61.35,
+                        "heading": 342.53,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9942497,
+                        "lon": 73.751652,
+                        "alt": 0.03,
+                        "distance": 48.02,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 1053,
+                        "y": 265,
+                        "width": 51,
+                        "height": 18
+                    },
+                    "frame_range": {
+                        "start": 249,
+                        "end": 300
+                    }
+                },
+                {
+                    "appearance_id": 4,
+                    "entry_time": "00:00:13",
+                    "exit_time": "00:00:13",
+                    "duration": 0.0,
+                    "confidence": 0.45,
+                    "severity_level": 3,
+                    "severity": "HIGH",
+                    "entry_location": {
+                        "lat": 19.9939052,
+                        "lon": 73.7515229,
+                        "alt": 0.17,
+                        "distance": 8.76,
+                        "heading": 342.52,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939052,
+                        "lon": 73.7515229,
+                        "alt": 0.17,
+                        "distance": 8.76,
+                        "heading": 342.52,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 578,
+                        "y": 202,
+                        "width": 150,
+                        "height": 126
+                    },
+                    "frame_range": {
+                        "start": 417,
+                        "end": 417
+                    }
+                },
+                {
+                    "appearance_id": 5,
+                    "entry_time": "00:00:14",
+                    "exit_time": "00:00:14",
+                    "duration": 0.1,
+                    "confidence": 0.31,
+                    "severity_level": 3,
+                    "severity": "HIGH",
+                    "entry_location": {
+                        "lat": 19.9939127,
+                        "lon": 73.7515189,
+                        "alt": 0.18,
+                        "distance": 9.69,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939104,
+                        "lon": 73.7515191,
+                        "alt": 0.18,
+                        "distance": 9.44,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 578,
+                        "y": 216,
+                        "width": 127,
+                        "height": 114
+                    },
+                    "frame_range": {
+                        "start": 441,
+                        "end": 444
+                    }
+                },
+                {
+                    "appearance_id": 6,
+                    "entry_time": "00:00:14",
+                    "exit_time": "00:00:15",
+                    "duration": 0.1,
+                    "confidence": 0.45,
+                    "severity_level": 3,
+                    "severity": "HIGH",
+                    "entry_location": {
+                        "lat": 19.9939104,
+                        "lon": 73.7515166,
+                        "alt": 0.18,
+                        "distance": 9.52,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939093,
+                        "lon": 73.751518,
+                        "alt": 0.18,
+                        "distance": 9.36,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 553,
+                        "y": 213,
+                        "width": 130,
+                        "height": 116
+                    },
+                    "frame_range": {
+                        "start": 450,
+                        "end": 453
+                    }
+                },
+                {
+                    "appearance_id": 7,
+                    "entry_time": "00:00:15",
+                    "exit_time": "00:00:15",
+                    "duration": 0.7,
                     "confidence": 0.53,
                     "severity_level": 3,
                     "severity": "HIGH",
                     "entry_location": {
-                        "lat": 19.9598103,
-                        "lon": 73.6774988,
-                        "alt": 22.64,
-                        "distance": 61.26,
-                        "heading": 359.85,
+                        "lat": 19.9939104,
+                        "lon": 73.7515194,
+                        "alt": 0.18,
+                        "distance": 9.44,
+                        "heading": 342.5,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9597342,
-                        "lon": 73.6775306,
-                        "alt": 22.54,
-                        "distance": 52.51,
-                        "heading": 0.67,
+                        "lat": 19.9939108,
+                        "lon": 73.7515159,
+                        "alt": 0.17,
+                        "distance": 9.6,
+                        "heading": 342.51,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 124,
-                        "y": 112,
-                        "width": 11,
-                        "height": 6
+                        "x": 582,
+                        "y": 213,
+                        "width": 118,
+                        "height": 117
                     },
                     "frame_range": {
-                        "start": 3591,
-                        "end": 3714
+                        "start": 459,
+                        "end": 480
                     }
                 },
                 {
-                    "appearance_id": 11,
-                    "entry_time": "00:02:04",
-                    "exit_time": "00:02:04",
+                    "appearance_id": 8,
+                    "entry_time": "00:00:16",
+                    "exit_time": "00:00:16",
+                    "duration": 0.0,
+                    "confidence": 0.26,
+                    "severity_level": 3,
+                    "severity": "HIGH",
+                    "entry_location": {
+                        "lat": 19.9939103,
+                        "lon": 73.7515168,
+                        "alt": 0.17,
+                        "distance": 9.52,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939103,
+                        "lon": 73.7515168,
+                        "alt": 0.17,
+                        "distance": 9.52,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 566,
+                        "y": 213,
+                        "width": 113,
+                        "height": 116
+                    },
+                    "frame_range": {
+                        "start": 486,
+                        "end": 486
+                    }
+                }
+            ]
+        },
+        {
+            "id_number": "Person_002",
+            "class": "vehicle",
+            "entry_time": "00:00:14",
+            "exit_time": "00:00:19",
+            "total_duration": 3.0,
+            "reidentification_count": 6,
+            "severity_level": 4,
+            "severity": "CRITICAL",
+            "description": "The image shows a close-up of a vehicle's front end, captured from an aerial surveillance perspective. The vehicle appears to be a small, dark-colored car, possibly a hatchback or sedan.",
+            "suggest_action": "Monitor - Alert authorities to the vehicle's movement and license plate information for further investigation.",
+            "evidence": {
+                "file_name": "Person_002_2026-08-26T07_04_04.866667_00_00.jpg",
+                "file_size": 823508,
+                "file_url": "https://pdrlimage.blob.core.windows.net/user-694fd387-919a-4455-a194-a17a59a4e713/threatimages/f5d613dd-6b88-43eb-acd1-c80cda982d9d/Person_002_2026-08-26T07_04_04.866667_00_00.jpg"
+            },
+            "appearances": [
+                {
+                    "appearance_id": 1,
+                    "entry_time": "00:00:14",
+                    "exit_time": "00:00:14",
+                    "duration": 0.2,
+                    "confidence": 0.51,
+                    "severity_level": 4,
+                    "severity": "CRITICAL",
+                    "entry_location": {
+                        "lat": 19.993918,
+                        "lon": 73.7515187,
+                        "alt": 0.17,
+                        "distance": 10.26,
+                        "heading": 342.52,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939194,
+                        "lon": 73.7515181,
+                        "alt": 0.17,
+                        "distance": 10.43,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 580,
+                        "y": 209,
+                        "width": 144,
+                        "height": 122
+                    },
+                    "frame_range": {
+                        "start": 429,
+                        "end": 435
+                    }
+                },
+                {
+                    "appearance_id": 2,
+                    "entry_time": "00:00:15",
+                    "exit_time": "00:00:15",
+                    "duration": 0.0,
+                    "confidence": 0.43,
+                    "severity_level": 4,
+                    "severity": "CRITICAL",
+                    "entry_location": {
+                        "lat": 19.9939196,
+                        "lon": 73.7515161,
+                        "alt": 0.18,
+                        "distance": 10.52,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939196,
+                        "lon": 73.7515161,
+                        "alt": 0.18,
+                        "distance": 10.52,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 577,
+                        "y": 212,
+                        "width": 124,
+                        "height": 119
+                    },
+                    "frame_range": {
+                        "start": 456,
+                        "end": 456
+                    }
+                },
+                {
+                    "appearance_id": 3,
+                    "entry_time": "00:00:16",
+                    "exit_time": "00:00:16",
+                    "duration": 0.0,
+                    "confidence": 0.27,
+                    "severity_level": 4,
+                    "severity": "CRITICAL",
+                    "entry_location": {
+                        "lat": 19.9938917,
+                        "lon": 73.7515417,
+                        "alt": 0.17,
+                        "distance": 6.95,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9938917,
+                        "lon": 73.7515417,
+                        "alt": 0.17,
+                        "distance": 6.95,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 786,
+                        "y": 326,
+                        "width": 66,
+                        "height": 180
+                    },
+                    "frame_range": {
+                        "start": 483,
+                        "end": 483
+                    }
+                },
+                {
+                    "appearance_id": 4,
+                    "entry_time": "00:00:16",
+                    "exit_time": "00:00:17",
+                    "duration": 1.3,
+                    "confidence": 0.39,
+                    "severity_level": 4,
+                    "severity": "CRITICAL",
+                    "entry_location": {
+                        "lat": 19.9938928,
+                        "lon": 73.7515417,
+                        "alt": 0.17,
+                        "distance": 7.07,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9938852,
+                        "lon": 73.7515418,
+                        "alt": 0.17,
+                        "distance": 6.24,
+                        "heading": 342.47,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 785,
+                        "y": 325,
+                        "width": 69,
+                        "height": 177
+                    },
+                    "frame_range": {
+                        "start": 492,
+                        "end": 531
+                    }
+                },
+                {
+                    "appearance_id": 5,
+                    "entry_time": "00:00:17",
+                    "exit_time": "00:00:18",
                     "duration": 0.1,
-                    "confidence": 0.59,
-                    "severity_level": 3,
-                    "severity": "HIGH",
+                    "confidence": 0.26,
+                    "severity_level": 4,
+                    "severity": "CRITICAL",
                     "entry_location": {
-                        "lat": 19.9597335,
-                        "lon": 73.6775285,
-                        "alt": 22.34,
-                        "distance": 52.51,
-                        "heading": 0.17,
+                        "lat": 19.9938855,
+                        "lon": 73.7515417,
+                        "alt": 0.17,
+                        "distance": 6.27,
+                        "heading": 342.46,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9597332,
-                        "lon": 73.6775275,
-                        "alt": 22.25,
-                        "distance": 52.51,
-                        "heading": 359.94,
+                        "lat": 19.9938849,
+                        "lon": 73.7515418,
+                        "alt": 0.17,
+                        "distance": 6.2,
+                        "heading": 342.46,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 123,
-                        "y": 111,
-                        "width": 13,
-                        "height": 7
+                        "x": 784,
+                        "y": 325,
+                        "width": 67,
+                        "height": 176
                     },
                     "frame_range": {
-                        "start": 3729,
-                        "end": 3732
+                        "start": 540,
+                        "end": 543
                     }
                 },
                 {
-                    "appearance_id": 12,
-                    "entry_time": "00:02:07",
-                    "exit_time": "00:02:07",
-                    "duration": 0.0,
-                    "confidence": 0.61,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596732,
-                        "lon": 73.6775341,
-                        "alt": 16.95,
-                        "distance": 45.94,
-                        "heading": 0.46,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9596732,
-                        "lon": 73.6775341,
-                        "alt": 16.95,
-                        "distance": 45.94,
-                        "heading": 0.46,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 113,
-                        "y": 108,
-                        "width": 12,
-                        "height": 8
-                    },
-                    "frame_range": {
-                        "start": 3831,
-                        "end": 3831
-                    }
-                },
-                {
-                    "appearance_id": 13,
-                    "entry_time": "00:02:08",
-                    "exit_time": "00:02:08",
-                    "duration": 0.0,
-                    "confidence": 0.63,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596137,
-                        "lon": 73.6775112,
-                        "alt": 16.03,
-                        "distance": 40.84,
-                        "heading": 0.33,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9596137,
-                        "lon": 73.6775112,
-                        "alt": 16.03,
-                        "distance": 40.84,
-                        "heading": 0.33,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 78,
-                        "y": 106,
-                        "width": 17,
-                        "height": 9
-                    },
-                    "frame_range": {
-                        "start": 3849,
-                        "end": 3849
-                    }
-                },
-                {
-                    "appearance_id": 14,
-                    "entry_time": "00:02:10",
-                    "exit_time": "00:02:10",
-                    "duration": 0.0,
-                    "confidence": 0.57,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596198,
-                        "lon": 73.6773799,
-                        "alt": 11.62,
-                        "distance": 52.51,
-                        "heading": 358.85,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9596198,
-                        "lon": 73.6773799,
-                        "alt": 11.62,
-                        "distance": 52.51,
-                        "heading": 358.85,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 22,
-                        "y": 48,
-                        "width": 14,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3930,
-                        "end": 3930
-                    }
-                },
-                {
-                    "appearance_id": 15,
-                    "entry_time": "00:02:11",
-                    "exit_time": "00:02:11",
-                    "duration": 0.0,
-                    "confidence": 0.5,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595916,
-                        "lon": 73.6773724,
-                        "alt": 10.27,
-                        "distance": 52.51,
-                        "heading": 358.19,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595916,
-                        "lon": 73.6773724,
-                        "alt": 10.27,
-                        "distance": 52.51,
-                        "heading": 358.19,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 21,
-                        "y": 48,
-                        "width": 12,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3960,
-                        "end": 3960
-                    }
-                },
-                {
-                    "appearance_id": 16,
-                    "entry_time": "00:02:12",
-                    "exit_time": "00:02:13",
-                    "duration": 0.6,
-                    "confidence": 0.75,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596706,
-                        "lon": 73.6775823,
-                        "alt": 9.72,
-                        "distance": 52.51,
-                        "heading": 1.08,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9597385,
-                        "lon": 73.6775756,
-                        "alt": 9.2,
-                        "distance": 61.26,
-                        "heading": 2.44,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 151,
-                        "y": 46,
-                        "width": 11,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3981,
-                        "end": 3999
-                    }
-                },
-                {
-                    "appearance_id": 17,
-                    "entry_time": "00:02:14",
-                    "exit_time": "00:02:14",
+                    "appearance_id": 6,
+                    "entry_time": "00:00:18",
+                    "exit_time": "00:00:18",
                     "duration": 0.3,
-                    "confidence": 0.6,
-                    "severity_level": 3,
-                    "severity": "HIGH",
+                    "confidence": 0.32,
+                    "severity_level": 4,
+                    "severity": "CRITICAL",
                     "entry_location": {
-                        "lat": 19.9596449,
-                        "lon": 73.6773574,
-                        "alt": 8.16,
-                        "distance": 61.26,
-                        "heading": 2.17,
+                        "lat": 19.9938848,
+                        "lon": 73.7515418,
+                        "alt": 0.18,
+                        "distance": 6.2,
+                        "heading": 342.47,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9595773,
-                        "lon": 73.6774019,
-                        "alt": 7.6,
-                        "distance": 52.51,
-                        "heading": 2.19,
+                        "lat": 19.9938854,
+                        "lon": 73.7515417,
+                        "alt": 0.2,
+                        "distance": 6.27,
+                        "heading": 342.48,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 30,
-                        "y": 50,
-                        "width": 12,
-                        "height": 6
+                        "x": 784,
+                        "y": 325,
+                        "width": 68,
+                        "height": 178
                     },
                     "frame_range": {
-                        "start": 4026,
-                        "end": 4035
+                        "start": 552,
+                        "end": 561
                     }
                 },
                 {
-                    "appearance_id": 18,
-                    "entry_time": "00:02:15",
-                    "exit_time": "00:02:15",
+                    "appearance_id": 7,
+                    "entry_time": "00:00:18",
+                    "exit_time": "00:00:19",
+                    "duration": 1.1,
+                    "confidence": 0.33,
+                    "severity_level": 4,
+                    "severity": "CRITICAL",
+                    "entry_location": {
+                        "lat": 19.9941308,
+                        "lon": 73.7516218,
+                        "alt": 0.2,
+                        "distance": 34.51,
+                        "heading": 342.49,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9941738,
+                        "lon": 73.7516325,
+                        "alt": 0.25,
+                        "distance": 39.44,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 1050,
+                        "y": 265,
+                        "width": 59,
+                        "height": 32
+                    },
+                    "frame_range": {
+                        "start": 567,
+                        "end": 600
+                    }
+                }
+            ]
+        },
+        {
+            "id_number": "Person_003",
+            "class": "vehicle",
+            "entry_time": "00:00:18",
+            "exit_time": "00:00:19",
+            "total_duration": 1.6,
+            "reidentification_count": 1,
+            "severity_level": 3,
+            "severity": "HIGH",
+            "description": "The image shows a person wearing blue jeans. The jeans are faded, with the color becoming lighter towards the knees. The person is standing in a public space, and the.",
+            "suggest_action": "Monitor - Observe the person's actions and movements in the public space.",
+            "evidence": {
+                "file_name": "Person_003_2026-08-26T07_04_04.766667_00_00.jpg",
+                "file_size": 805367,
+                "file_url": "https://pdrlimage.blob.core.windows.net/user-694fd387-919a-4455-a194-a17a59a4e713/threatimages/f5d613dd-6b88-43eb-acd1-c80cda982d9d/Person_003_2026-08-26T07_04_04.766667_00_00.jpg"
+            },
+            "appearances": [
+                {
+                    "appearance_id": 1,
+                    "entry_time": "00:00:18",
+                    "exit_time": "00:00:18",
+                    "duration": 0.4,
+                    "confidence": 0.32,
+                    "severity_level": 3,
+                    "severity": "HIGH",
+                    "entry_location": {
+                        "lat": 19.9938916,
+                        "lon": 73.7515413,
+                        "alt": 0.18,
+                        "distance": 6.95,
+                        "heading": 342.47,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939227,
+                        "lon": 73.7515155,
+                        "alt": 0.19,
+                        "distance": 10.88,
+                        "heading": 342.48,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 784,
+                        "y": 325,
+                        "width": 68,
+                        "height": 180
+                    },
+                    "frame_range": {
+                        "start": 546,
+                        "end": 558
+                    }
+                },
+                {
+                    "appearance_id": 2,
+                    "entry_time": "00:00:18",
+                    "exit_time": "00:00:19",
+                    "duration": 1.2,
+                    "confidence": 0.39,
+                    "severity_level": 3,
+                    "severity": "HIGH",
+                    "entry_location": {
+                        "lat": 19.9938922,
+                        "lon": 73.7515412,
+                        "alt": 0.2,
+                        "distance": 7.03,
+                        "heading": 342.49,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9938846,
+                        "lon": 73.7515417,
+                        "alt": 0.25,
+                        "distance": 6.2,
+                        "heading": 342.51,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 785,
+                        "y": 326,
+                        "width": 67,
+                        "height": 178
+                    },
+                    "frame_range": {
+                        "start": 564,
+                        "end": 600
+                    }
+                }
+            ]
+        },
+        {
+            "id_number": "Person_004",
+            "class": "vehicle",
+            "entry_time": "00:00:18",
+            "exit_time": "00:00:20",
+            "total_duration": 0.5,
+            "reidentification_count": 3,
+            "severity_level": 1,
+            "severity": "LOW",
+            "description": "A man is seen in the image, captured from a surveillance camera. He is seated and appears to be using a cell phone. He is wearing a white shirt and.",
+            "suggest_action": "MONITOR \u2014 Standard vehicle Person_004 passage (0s). Log keyframes and maintain routine visual observation.",
+            "evidence": {
+                "file_name": "Person_004_2026-08-26T07_04_06.466667_00_00.jpg",
+                "file_size": 784669,
+                "file_url": "https://pdrlimage.blob.core.windows.net/user-694fd387-919a-4455-a194-a17a59a4e713/threatimages/f5d613dd-6b88-43eb-acd1-c80cda982d9d/Person_004_2026-08-26T07_04_06.466667_00_00.jpg"
+            },
+            "appearances": [
+                {
+                    "appearance_id": 1,
+                    "entry_time": "00:00:18",
+                    "exit_time": "00:00:18",
                     "duration": 0.0,
-                    "confidence": 0.55,
-                    "severity_level": 3,
-                    "severity": "HIGH",
+                    "confidence": 0.29,
+                    "severity_level": 1,
+                    "severity": "LOW",
                     "entry_location": {
-                        "lat": 19.9596146,
-                        "lon": 73.6774773,
-                        "alt": 6.56,
-                        "distance": 52.51,
-                        "heading": 2.22,
+                        "lat": 19.9939227,
+                        "lon": 73.7515156,
+                        "alt": 0.2,
+                        "distance": 10.88,
+                        "heading": 342.49,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9596146,
-                        "lon": 73.6774773,
-                        "alt": 6.56,
-                        "distance": 52.51,
-                        "heading": 2.22,
+                        "lat": 19.9939227,
+                        "lon": 73.7515156,
+                        "alt": 0.2,
+                        "distance": 10.88,
+                        "heading": 342.49,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 86,
-                        "y": 49,
-                        "width": 13,
-                        "height": 7
+                        "x": 607,
+                        "y": 215,
+                        "width": 83,
+                        "height": 115
                     },
                     "frame_range": {
-                        "start": 4053,
-                        "end": 4053
+                        "start": 564,
+                        "end": 564
                     }
                 },
                 {
-                    "appearance_id": 19,
-                    "entry_time": "00:02:15",
-                    "exit_time": "00:02:15",
+                    "appearance_id": 2,
+                    "entry_time": "00:00:18",
+                    "exit_time": "00:00:19",
+                    "duration": 0.3,
+                    "confidence": 0.28,
+                    "severity_level": 1,
+                    "severity": "LOW",
+                    "entry_location": {
+                        "lat": 19.9939219,
+                        "lon": 73.7515161,
+                        "alt": 0.21,
+                        "distance": 10.79,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.993911,
+                        "lon": 73.7515195,
+                        "alt": 0.22,
+                        "distance": 9.52,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 609,
+                        "y": 215,
+                        "width": 83,
+                        "height": 116
+                    },
+                    "frame_range": {
+                        "start": 570,
+                        "end": 579
+                    }
+                },
+                {
+                    "appearance_id": 3,
+                    "entry_time": "00:00:19",
+                    "exit_time": "00:00:19",
+                    "duration": 0.1,
+                    "confidence": 0.41,
+                    "severity_level": 1,
+                    "severity": "LOW",
+                    "entry_location": {
+                        "lat": 19.9939092,
+                        "lon": 73.7515187,
+                        "alt": 0.23,
+                        "distance": 9.36,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939091,
+                        "lon": 73.7515184,
+                        "alt": 0.23,
+                        "distance": 9.36,
+                        "heading": 342.5,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 598,
+                        "y": 214,
+                        "width": 82,
+                        "height": 118
+                    },
+                    "frame_range": {
+                        "start": 585,
+                        "end": 588
+                    }
+                },
+                {
+                    "appearance_id": 4,
+                    "entry_time": "00:00:20",
+                    "exit_time": "00:00:20",
+                    "duration": 0.1,
+                    "confidence": 0.41,
+                    "severity_level": 1,
+                    "severity": "LOW",
+                    "entry_location": {
+                        "lat": 19.9939096,
+                        "lon": 73.751518,
+                        "alt": 0.25,
+                        "distance": 9.44,
+                        "heading": 342.48,
+                        "direction": "N"
+                    },
+                    "exit_location": {
+                        "lat": 19.9939096,
+                        "lon": 73.751518,
+                        "alt": 0.25,
+                        "distance": 9.44,
+                        "heading": 342.48,
+                        "direction": "N"
+                    },
+                    "bounding_box": {
+                        "x": 591,
+                        "y": 202,
+                        "width": 88,
+                        "height": 117
+                    },
+                    "frame_range": {
+                        "start": 615,
+                        "end": 615
+                    }
+                }
+            ]
+        },
+        {
+            "id_number": "Person_005",
+            "class": "person",
+            "entry_time": "00:00:19",
+            "exit_time": "00:00:20",
+            "total_duration": 0.5,
+            "reidentification_count": 1,
+            "severity_level": 1,
+            "severity": "LOW",
+            "description": "A person is standing on a sidewalk, wearing blue jeans. They are wearing a dark jacket and have a backpack on. The person appears to be looking down at the.",
+            "suggest_action": "Monitor - Observe the person's actions and movements for any suspicious behavior or potential threat.",
+            "evidence": {
+                "file_name": "Person_005_2026-08-26T07_04_05.866667_00_00.jpg",
+                "file_size": 796923,
+                "file_url": "https://pdrlimage.blob.core.windows.net/user-694fd387-919a-4455-a194-a17a59a4e713/threatimages/f5d613dd-6b88-43eb-acd1-c80cda982d9d/Person_005_2026-08-26T07_04_05.866667_00_00.jpg"
+            },
+            "appearances": [
+                {
+                    "appearance_id": 1,
+                    "entry_time": "00:00:19",
+                    "exit_time": "00:00:19",
                     "duration": 0.0,
-                    "confidence": 0.64,
-                    "severity_level": 3,
-                    "severity": "HIGH",
+                    "confidence": 0.31,
+                    "severity_level": 1,
+                    "severity": "LOW",
                     "entry_location": {
-                        "lat": 19.9596145,
-                        "lon": 73.6774775,
-                        "alt": 6.42,
-                        "distance": 52.51,
-                        "heading": 2.22,
+                        "lat": 19.9939185,
+                        "lon": 73.7515161,
+                        "alt": 0.22,
+                        "distance": 10.43,
+                        "heading": 342.5,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9596145,
-                        "lon": 73.6774775,
-                        "alt": 6.42,
-                        "distance": 52.51,
-                        "heading": 2.22,
+                        "lat": 19.9939185,
+                        "lon": 73.7515161,
+                        "alt": 0.22,
+                        "distance": 10.43,
+                        "heading": 342.5,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 86,
-                        "y": 48,
-                        "width": 13,
-                        "height": 7
+                        "x": 602,
+                        "y": 213,
+                        "width": 82,
+                        "height": 120
                     },
                     "frame_range": {
-                        "start": 4059,
-                        "end": 4059
+                        "start": 582,
+                        "end": 582
                     }
                 },
                 {
-                    "appearance_id": 20,
-                    "entry_time": "00:02:15",
-                    "exit_time": "00:02:16",
-                    "duration": 1.03,
-                    "confidence": 0.57,
-                    "severity_level": 3,
-                    "severity": "HIGH",
+                    "appearance_id": 2,
+                    "entry_time": "00:00:19",
+                    "exit_time": "00:00:20",
+                    "duration": 0.5,
+                    "confidence": 0.46,
+                    "severity_level": 1,
+                    "severity": "LOW",
                     "entry_location": {
-                        "lat": 19.9596141,
-                        "lon": 73.677477,
-                        "alt": 6.28,
-                        "distance": 52.51,
-                        "heading": 2.21,
+                        "lat": 19.9939153,
+                        "lon": 73.7515161,
+                        "alt": 0.24,
+                        "distance": 10.09,
+                        "heading": 342.51,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9596835,
-                        "lon": 73.677439,
-                        "alt": 5.32,
-                        "distance": 61.26,
-                        "heading": 2.13,
+                        "lat": 19.9938909,
+                        "lon": 73.7515411,
+                        "alt": 0.25,
+                        "distance": 6.91,
+                        "heading": 342.49,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 86,
-                        "y": 49,
-                        "width": 12,
-                        "height": 7
+                        "x": 591,
+                        "y": 206,
+                        "width": 88,
+                        "height": 124
                     },
                     "frame_range": {
-                        "start": 4065,
-                        "end": 4095
+                        "start": 597,
+                        "end": 612
                     }
                 }
             ]
         },
         {
             "id_number": "Vehicle_002",
-            "class": "person",
-            "entry_time": "00:00:30",
-            "exit_time": "00:01:56",
-            "total_duration": 9.9,
-            "reidentification_count": 9,
-            "severity_level": 3,
-            "severity": "HIGH",
-            "description": "A person is seen in the image, standing in an open area with no visible weaponry or military gear. They appear to be casually dressed and are not engaged in any hostile activity. The individual is not in close proximity to any assets or installations of concern.",
-            "suggest_action": "MONITOR - Raise perimeter force readiness and dispatch patrol to monitor subject loitering near sector. Assess the situation and escalate if the individual lingers for more than 60 seconds without clear purpose.",
-            "evidence": {
-                "file_name": "Vehicle_002_2026-07-02T08_09_55.466667_00_00.jpg",
-                "file_size": 438094,
-                "file_url": "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237/threatimages/ec2dd1a6-acd8-42ce-af00-00bf7020a6a5/Vehicle_002_2026-07-02T08_09_55.466667_00_00.jpg"
-            },
-            "appearances": [
-                {
-                    "appearance_id": 1,
-                    "entry_time": "00:00:30",
-                    "exit_time": "00:00:30",
-                    "duration": 0.0,
-                    "confidence": 0.74,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595378,
-                        "lon": 73.6775924,
-                        "alt": 19.8,
-                        "distance": 13.61,
-                        "heading": 10.47,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595378,
-                        "lon": 73.6775924,
-                        "alt": 19.8,
-                        "distance": 13.61,
-                        "heading": 10.47,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 149,
-                        "y": 145,
-                        "width": 45,
-                        "height": 27
-                    },
-                    "frame_range": {
-                        "start": 921,
-                        "end": 921
-                    }
-                },
-                {
-                    "appearance_id": 2,
-                    "entry_time": "00:00:31",
-                    "exit_time": "00:00:32",
-                    "duration": 0.6,
-                    "confidence": 0.61,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595372,
-                        "lon": 73.677597,
-                        "alt": 19.88,
-                        "distance": 13.61,
-                        "heading": 10.77,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595326,
-                        "lon": 73.6776011,
-                        "alt": 19.94,
-                        "distance": 13.13,
-                        "heading": 11.29,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 156,
-                        "y": 145,
-                        "width": 44,
-                        "height": 27
-                    },
-                    "frame_range": {
-                        "start": 957,
-                        "end": 975
-                    }
-                },
-                {
-                    "appearance_id": 3,
-                    "entry_time": "00:00:32",
-                    "exit_time": "00:00:32",
-                    "duration": 0.0,
-                    "confidence": 0.56,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595517,
-                        "lon": 73.6776078,
-                        "alt": 19.98,
-                        "distance": 15.31,
-                        "heading": 11.75,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595517,
-                        "lon": 73.6776078,
-                        "alt": 19.98,
-                        "distance": 15.31,
-                        "heading": 11.75,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 172,
-                        "y": 145,
-                        "width": 40,
-                        "height": 24
-                    },
-                    "frame_range": {
-                        "start": 990,
-                        "end": 990
-                    }
-                },
-                {
-                    "appearance_id": 4,
-                    "entry_time": "00:00:35",
-                    "exit_time": "00:00:39",
-                    "duration": 4.0,
-                    "confidence": 0.63,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9602403,
-                        "lon": 73.6775996,
-                        "alt": 21.74,
-                        "distance": 91.89,
-                        "heading": 11.99,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9600669,
-                        "lon": 73.6774766,
-                        "alt": 23.58,
-                        "distance": 73.51,
-                        "heading": 1.53,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 159,
-                        "y": 87,
-                        "width": 9,
-                        "height": 4
-                    },
-                    "frame_range": {
-                        "start": 1074,
-                        "end": 1194
-                    }
-                },
-                {
-                    "appearance_id": 5,
-                    "entry_time": "00:01:28",
-                    "exit_time": "00:01:28",
-                    "duration": 0.0,
-                    "confidence": 0.52,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9598665,
-                        "lon": 73.677436,
-                        "alt": 29.43,
-                        "distance": 52.51,
-                        "heading": 359.57,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9598665,
-                        "lon": 73.677436,
-                        "alt": 29.43,
-                        "distance": 52.51,
-                        "heading": 359.57,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 129,
-                        "y": 118,
-                        "width": 12,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 2646,
-                        "end": 2646
-                    }
-                },
-                {
-                    "appearance_id": 6,
-                    "entry_time": "00:01:28",
-                    "exit_time": "00:01:29",
-                    "duration": 1.4,
-                    "confidence": 0.54,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9598664,
-                        "lon": 73.6774353,
-                        "alt": 29.43,
-                        "distance": 52.51,
-                        "heading": 359.61,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9598648,
-                        "lon": 73.6774301,
-                        "alt": 29.46,
-                        "distance": 52.51,
-                        "heading": 359.48,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 128,
-                        "y": 118,
-                        "width": 13,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 2652,
-                        "end": 2694
-                    }
-                },
-                {
-                    "appearance_id": 7,
-                    "entry_time": "00:01:29",
-                    "exit_time": "00:01:29",
-                    "duration": 0.0,
-                    "confidence": 0.58,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9598649,
-                        "lon": 73.6774303,
-                        "alt": 29.47,
-                        "distance": 52.51,
-                        "heading": 359.42,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9598649,
-                        "lon": 73.6774303,
-                        "alt": 29.47,
-                        "distance": 52.51,
-                        "heading": 359.42,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 127,
-                        "y": 118,
-                        "width": 12,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 2700,
-                        "end": 2700
-                    }
-                },
-                {
-                    "appearance_id": 8,
-                    "entry_time": "00:01:34",
-                    "exit_time": "00:01:38",
-                    "duration": 3.8,
-                    "confidence": 0.53,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.959863,
-                        "lon": 73.6774283,
-                        "alt": 29.26,
-                        "distance": 52.51,
-                        "heading": 359.82,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9598609,
-                        "lon": 73.67742,
-                        "alt": 29.14,
-                        "distance": 52.51,
-                        "heading": 359.27,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 125,
-                        "y": 108,
-                        "width": 10,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 2850,
-                        "end": 2964
-                    }
-                },
-                {
-                    "appearance_id": 9,
-                    "entry_time": "00:01:40",
-                    "exit_time": "00:01:40",
-                    "duration": 0.1,
-                    "confidence": 0.56,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9600621,
-                        "lon": 73.6777408,
-                        "alt": 29.35,
-                        "distance": 73.51,
-                        "heading": 359.33,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9602229,
-                        "lon": 73.6777805,
-                        "alt": 29.35,
-                        "distance": 91.89,
-                        "heading": 359.47,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 261,
-                        "y": 0,
-                        "width": 17,
-                        "height": 5
-                    },
-                    "frame_range": {
-                        "start": 3006,
-                        "end": 3009
-                    }
-                },
-                {
-                    "appearance_id": 10,
-                    "entry_time": "00:01:56",
-                    "exit_time": "00:01:56",
-                    "duration": 0.0,
-                    "confidence": 0.75,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9601435,
-                        "lon": 73.6778294,
-                        "alt": 23.39,
-                        "distance": 91.89,
-                        "heading": 358.12,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9601435,
-                        "lon": 73.6778294,
-                        "alt": 23.39,
-                        "distance": 91.89,
-                        "heading": 358.12,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 261,
-                        "y": 0,
-                        "width": 12,
-                        "height": 4
-                    },
-                    "frame_range": {
-                        "start": 3495,
-                        "end": 3495
-                    }
-                }
-            ]
-        },
-        {
-            "id_number": "Vehicle_003",
-            "class": "person",
-            "entry_time": "00:01:42",
-            "exit_time": "00:02:13",
-            "total_duration": 12.1,
-            "reidentification_count": 16,
-            "severity_level": 3,
-            "severity": "HIGH",
-            "description": "A person is seen in the image, standing in the middle of a field with no visible immediate threat. They are dressed in casual clothing and appear to be in a rural or semi-urban area. There are no visible weapons or military gear, and the individual is not engaged in any hostile activity. The presence of the person in the area is unusual but plausibly innocent, as they are not exhibiting any overtly suspicious behavior or concealing themselves. The overall threat level is assessed as",
-            "suggest_action": "MONITOR \u2014 Maintain passive surveillance on Target Vehicle_003 and log movement patterns across area.",
-            "evidence": {
-                "file_name": "Vehicle_003_2026-07-02T08_10_12.566667_00_00.jpg",
-                "file_size": 382167,
-                "file_url": "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237/threatimages/ec2dd1a6-acd8-42ce-af00-00bf7020a6a5/Vehicle_003_2026-07-02T08_10_12.566667_00_00.jpg"
-            },
-            "appearances": [
-                {
-                    "appearance_id": 1,
-                    "entry_time": "00:01:42",
-                    "exit_time": "00:01:42",
-                    "duration": 0.4,
-                    "confidence": 0.56,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9605014,
-                        "lon": 73.6773926,
-                        "alt": 29.4,
-                        "distance": 122.51,
-                        "heading": 359.5,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.960499,
-                        "lon": 73.6773773,
-                        "alt": 29.38,
-                        "distance": 122.51,
-                        "heading": 358.98,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 169,
-                        "y": 100,
-                        "width": 8,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3075,
-                        "end": 3087
-                    }
-                },
-                {
-                    "appearance_id": 2,
-                    "entry_time": "00:01:44",
-                    "exit_time": "00:01:44",
-                    "duration": 0.0,
-                    "confidence": 0.52,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9605001,
-                        "lon": 73.6773854,
-                        "alt": 29.38,
-                        "distance": 122.51,
-                        "heading": 359.51,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9605001,
-                        "lon": 73.6773854,
-                        "alt": 29.38,
-                        "distance": 122.51,
-                        "heading": 359.51,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 168,
-                        "y": 100,
-                        "width": 7,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3141,
-                        "end": 3141
-                    }
-                },
-                {
-                    "appearance_id": 3,
-                    "entry_time": "00:01:46",
-                    "exit_time": "00:01:51",
-                    "duration": 5.2,
-                    "confidence": 0.5,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.960229,
-                        "lon": 73.6774354,
-                        "alt": 29.48,
-                        "distance": 91.89,
-                        "heading": 359.6,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9602185,
-                        "lon": 73.677412,
-                        "alt": 27.49,
-                        "distance": 91.89,
-                        "heading": 358.66,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 167,
-                        "y": 99,
-                        "width": 7,
-                        "height": 4
-                    },
-                    "frame_range": {
-                        "start": 3192,
-                        "end": 3348
-                    }
-                },
-                {
-                    "appearance_id": 4,
-                    "entry_time": "00:01:52",
-                    "exit_time": "00:01:53",
-                    "duration": 1.1,
-                    "confidence": 0.61,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9601932,
-                        "lon": 73.6773859,
-                        "alt": 27.42,
-                        "distance": 91.89,
-                        "heading": 356.76,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9601773,
-                        "lon": 73.6774063,
-                        "alt": 27.16,
-                        "distance": 91.89,
-                        "heading": 356.66,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 163,
-                        "y": 99,
-                        "width": 8,
-                        "height": 4
-                    },
-                    "frame_range": {
-                        "start": 3378,
-                        "end": 3411
-                    }
-                },
-                {
-                    "appearance_id": 5,
-                    "entry_time": "00:01:53",
-                    "exit_time": "00:01:53",
-                    "duration": 0.1,
-                    "confidence": 0.54,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9604424,
-                        "lon": 73.6773401,
-                        "alt": 27.07,
-                        "distance": 122.51,
-                        "heading": 356.75,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9604416,
-                        "lon": 73.6773432,
-                        "alt": 27.03,
-                        "distance": 122.51,
-                        "heading": 356.8,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 163,
-                        "y": 100,
-                        "width": 8,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3417,
-                        "end": 3420
-                    }
-                },
-                {
-                    "appearance_id": 6,
-                    "entry_time": "00:01:54",
-                    "exit_time": "00:01:54",
-                    "duration": 0.0,
-                    "confidence": 0.52,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9604401,
-                        "lon": 73.6773511,
-                        "alt": 26.71,
-                        "distance": 122.51,
-                        "heading": 356.99,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9604401,
-                        "lon": 73.6773511,
-                        "alt": 26.71,
-                        "distance": 122.51,
-                        "heading": 356.99,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 163,
-                        "y": 100,
-                        "width": 8,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3426,
-                        "end": 3426
-                    }
-                },
-                {
-                    "appearance_id": 7,
-                    "entry_time": "00:01:54",
-                    "exit_time": "00:01:54",
-                    "duration": 0.0,
-                    "confidence": 0.57,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9604381,
-                        "lon": 73.6773571,
-                        "alt": 26.35,
-                        "distance": 122.51,
-                        "heading": 357.2,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9604381,
-                        "lon": 73.6773571,
-                        "alt": 26.35,
-                        "distance": 122.51,
-                        "heading": 357.2,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 162,
-                        "y": 100,
-                        "width": 9,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3432,
-                        "end": 3432
-                    }
-                },
-                {
-                    "appearance_id": 8,
-                    "entry_time": "00:01:54",
-                    "exit_time": "00:01:54",
-                    "duration": 0.2,
-                    "confidence": 0.54,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9604362,
-                        "lon": 73.6773631,
-                        "alt": 26.0,
-                        "distance": 122.51,
-                        "heading": 357.4,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9601669,
-                        "lon": 73.6774385,
-                        "alt": 25.64,
-                        "distance": 91.89,
-                        "heading": 357.61,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 162,
-                        "y": 100,
-                        "width": 8,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3438,
-                        "end": 3444
-                    }
-                },
-                {
-                    "appearance_id": 9,
-                    "entry_time": "00:01:55",
-                    "exit_time": "00:01:56",
-                    "duration": 1.4,
-                    "confidence": 0.56,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.959752,
-                        "lon": 73.6773674,
-                        "alt": 25.13,
-                        "distance": 52.51,
-                        "heading": 357.79,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9597248,
-                        "lon": 73.6773909,
-                        "alt": 23.39,
-                        "distance": 52.51,
-                        "heading": 358.12,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 54,
-                        "y": 105,
-                        "width": 18,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3453,
-                        "end": 3495
-                    }
-                },
-                {
-                    "appearance_id": 10,
-                    "entry_time": "00:02:05",
-                    "exit_time": "00:02:06",
-                    "duration": 1.1,
-                    "confidence": 0.53,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596726,
-                        "lon": 73.6774005,
-                        "alt": 20.71,
-                        "distance": 52.51,
-                        "heading": 357.31,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9596778,
-                        "lon": 73.6774084,
-                        "alt": 18.64,
-                        "distance": 52.51,
-                        "heading": 358.58,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 48,
-                        "y": 105,
-                        "width": 19,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3765,
-                        "end": 3798
-                    }
-                },
-                {
-                    "appearance_id": 11,
-                    "entry_time": "00:02:06",
-                    "exit_time": "00:02:07",
-                    "duration": 0.6,
-                    "confidence": 0.51,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596819,
-                        "lon": 73.6774149,
-                        "alt": 18.31,
-                        "distance": 52.51,
-                        "heading": 359.48,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.959752,
-                        "lon": 73.6773758,
-                        "alt": 17.38,
-                        "distance": 61.26,
-                        "heading": 0.49,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 48,
-                        "y": 105,
-                        "width": 18,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3804,
-                        "end": 3822
-                    }
-                },
-                {
-                    "appearance_id": 12,
-                    "entry_time": "00:02:07",
-                    "exit_time": "00:02:07",
-                    "duration": 0.0,
-                    "confidence": 0.59,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595759,
-                        "lon": 73.6774477,
-                        "alt": 16.51,
-                        "distance": 40.84,
-                        "heading": 0.42,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595759,
-                        "lon": 73.6774477,
-                        "alt": 16.51,
-                        "distance": 40.84,
-                        "heading": 0.42,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 6,
-                        "y": 100,
-                        "width": 25,
-                        "height": 9
-                    },
-                    "frame_range": {
-                        "start": 3840,
-                        "end": 3840
-                    }
-                },
-                {
-                    "appearance_id": 13,
-                    "entry_time": "00:02:09",
-                    "exit_time": "00:02:11",
-                    "duration": 1.4,
-                    "confidence": 0.82,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596546,
-                        "lon": 73.677393,
-                        "alt": 13.58,
-                        "distance": 52.51,
-                        "heading": 359.33,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.959526,
-                        "lon": 73.6774368,
-                        "alt": 11.48,
-                        "distance": 40.84,
-                        "heading": 358.8,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 28,
-                        "y": 2,
-                        "width": 20,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3891,
-                        "end": 3933
-                    }
-                },
-                {
-                    "appearance_id": 14,
-                    "entry_time": "00:02:11",
-                    "exit_time": "00:02:11",
-                    "duration": 0.1,
-                    "confidence": 0.62,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595208,
-                        "lon": 73.6774359,
-                        "alt": 11.21,
-                        "distance": 40.84,
-                        "heading": 358.66,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595181,
-                        "lon": 73.6774355,
-                        "alt": 11.08,
-                        "distance": 40.84,
-                        "heading": 358.6,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 4,
-                        "y": 1,
-                        "width": 20,
-                        "height": 9
-                    },
-                    "frame_range": {
-                        "start": 3939,
-                        "end": 3942
-                    }
-                },
-                {
-                    "appearance_id": 15,
-                    "entry_time": "00:02:11",
-                    "exit_time": "00:02:12",
-                    "duration": 0.4,
-                    "confidence": 0.54,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595103,
-                        "lon": 73.6774341,
-                        "alt": 10.68,
-                        "distance": 40.84,
-                        "heading": 358.39,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595012,
-                        "lon": 73.6774339,
-                        "alt": 10.18,
-                        "distance": 40.84,
-                        "heading": 358.45,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 4,
-                        "y": 1,
-                        "width": 20,
-                        "height": 9
-                    },
-                    "frame_range": {
-                        "start": 3951,
-                        "end": 3963
-                    }
-                },
-                {
-                    "appearance_id": 16,
-                    "entry_time": "00:02:12",
-                    "exit_time": "00:02:12",
-                    "duration": 0.0,
-                    "confidence": 0.63,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595003,
-                        "lon": 73.6774431,
-                        "alt": 9.88,
-                        "distance": 40.84,
-                        "heading": 0.21,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595003,
-                        "lon": 73.6774431,
-                        "alt": 9.88,
-                        "distance": 40.84,
-                        "heading": 0.21,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 5,
-                        "y": 1,
-                        "width": 22,
-                        "height": 9
-                    },
-                    "frame_range": {
-                        "start": 3975,
-                        "end": 3975
-                    }
-                },
-                {
-                    "appearance_id": 17,
-                    "entry_time": "00:02:13",
-                    "exit_time": "00:02:13",
-                    "duration": 0.1,
-                    "confidence": 0.5,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9594875,
-                        "lon": 73.6774496,
-                        "alt": 8.9,
-                        "distance": 40.84,
-                        "heading": 2.33,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.959486,
-                        "lon": 73.6774492,
-                        "alt": 8.8,
-                        "distance": 40.84,
-                        "heading": 2.29,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 4,
-                        "y": 1,
-                        "width": 20,
-                        "height": 9
-                    },
-                    "frame_range": {
-                        "start": 4008,
-                        "end": 4011
-                    }
-                }
-            ]
-        },
-        {
-            "id_number": "Vehicle_004",
             "class": "vehicle",
-            "entry_time": "00:01:55",
-            "exit_time": "00:02:06",
-            "total_duration": 3.8,
-            "reidentification_count": 6,
-            "severity_level": 3,
-            "severity": "HIGH",
-            "description": "A vehicle is seen in the image, parked in a field with no visible activity or weapons. It is unclear if the vehicle is associated with any hostile intent or if it is simply a civilian vehicle. The vehicle is not in motion and does not appear to be engaging in any suspicious behavior.",
-            "suggest_action": "ALERT - Raise perimeter force readiness and dispatch patrol to monitor the vehicle. The presence of a vehicle in a field without clear purpose may indicate potential reconnaissance of our position.",
-            "evidence": {
-                "file_name": "Vehicle_004_2026-07-02T08_10_05.566667_00_00.jpg",
-                "file_size": 394937,
-                "file_url": "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237/threatimages/ec2dd1a6-acd8-42ce-af00-00bf7020a6a5/Vehicle_004_2026-07-02T08_10_05.566667_00_00.jpg"
-            },
-            "appearances": [
-                {
-                    "appearance_id": 1,
-                    "entry_time": "00:01:55",
-                    "exit_time": "00:01:56",
-                    "duration": 1.3,
-                    "confidence": 0.57,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.960164,
-                        "lon": 73.6774488,
-                        "alt": 25.13,
-                        "distance": 91.89,
-                        "heading": 357.79,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9604071,
-                        "lon": 73.6774037,
-                        "alt": 23.49,
-                        "distance": 122.51,
-                        "heading": 357.84,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 163,
-                        "y": 99,
-                        "width": 7,
-                        "height": 4
-                    },
-                    "frame_range": {
-                        "start": 3453,
-                        "end": 3492
-                    }
-                },
-                {
-                    "appearance_id": 2,
-                    "entry_time": "00:01:58",
-                    "exit_time": "00:01:58",
-                    "duration": 0.2,
-                    "confidence": 0.54,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.960372,
-                        "lon": 73.6774467,
-                        "alt": 22.6,
-                        "distance": 122.51,
-                        "heading": 359.28,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9603713,
-                        "lon": 73.6774498,
-                        "alt": 22.59,
-                        "distance": 122.51,
-                        "heading": 359.4,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 161,
-                        "y": 100,
-                        "width": 8,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3555,
-                        "end": 3561
-                    }
-                },
-                {
-                    "appearance_id": 3,
-                    "entry_time": "00:01:58",
-                    "exit_time": "00:01:59",
-                    "duration": 0.6,
-                    "confidence": 0.53,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9603706,
-                        "lon": 73.6774528,
-                        "alt": 22.57,
-                        "distance": 122.51,
-                        "heading": 359.52,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9600995,
-                        "lon": 73.6775149,
-                        "alt": 22.62,
-                        "distance": 91.89,
-                        "heading": 359.77,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 161,
-                        "y": 100,
-                        "width": 8,
-                        "height": 3
-                    },
-                    "frame_range": {
-                        "start": 3567,
-                        "end": 3585
-                    }
-                },
-                {
-                    "appearance_id": 4,
-                    "entry_time": "00:02:01",
-                    "exit_time": "00:02:01",
-                    "duration": 0.2,
-                    "confidence": 0.54,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9600977,
-                        "lon": 73.6775247,
-                        "alt": 22.7,
-                        "distance": 91.89,
-                        "heading": 0.54,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9600985,
-                        "lon": 73.6775291,
-                        "alt": 22.69,
-                        "distance": 91.89,
-                        "heading": 0.73,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 159,
-                        "y": 99,
-                        "width": 9,
-                        "height": 4
-                    },
-                    "frame_range": {
-                        "start": 3636,
-                        "end": 3642
-                    }
-                },
-                {
-                    "appearance_id": 5,
-                    "entry_time": "00:02:02",
-                    "exit_time": "00:02:03",
-                    "duration": 1.3,
-                    "confidence": 0.56,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9594775,
-                        "lon": 73.6777727,
-                        "alt": 22.51,
-                        "distance": 22.97,
-                        "heading": 0.6,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9600967,
-                        "lon": 73.6775216,
-                        "alt": 22.57,
-                        "distance": 91.89,
-                        "heading": 0.78,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 306,
-                        "y": 223,
-                        "width": 11,
-                        "height": 16
-                    },
-                    "frame_range": {
-                        "start": 3681,
-                        "end": 3720
-                    }
-                },
-                {
-                    "appearance_id": 6,
-                    "entry_time": "00:02:05",
-                    "exit_time": "00:02:05",
-                    "duration": 0.1,
-                    "confidence": 0.52,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9594433,
-                        "lon": 73.6777441,
-                        "alt": 20.28,
-                        "distance": 18.38,
-                        "heading": 356.82,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9594434,
-                        "lon": 73.6777433,
-                        "alt": 20.07,
-                        "distance": 18.38,
-                        "heading": 356.58,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 303,
-                        "y": 219,
-                        "width": 13,
-                        "height": 20
-                    },
-                    "frame_range": {
-                        "start": 3771,
-                        "end": 3774
-                    }
-                },
-                {
-                    "appearance_id": 7,
-                    "entry_time": "00:02:06",
-                    "exit_time": "00:02:06",
-                    "duration": 0.1,
-                    "confidence": 0.56,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9594414,
-                        "lon": 73.6777486,
-                        "alt": 18.64,
-                        "distance": 18.38,
-                        "heading": 358.58,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.959441,
-                        "lon": 73.6777498,
-                        "alt": 18.47,
-                        "distance": 18.38,
-                        "heading": 359.03,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 303,
-                        "y": 219,
-                        "width": 13,
-                        "height": 20
-                    },
-                    "frame_range": {
-                        "start": 3798,
-                        "end": 3801
-                    }
-                }
-            ]
-        },
-        {
-            "id_number": "Vehicle_005",
-            "class": "person",
-            "entry_time": "00:02:09",
-            "exit_time": "00:02:14",
-            "total_duration": 1.8,
-            "reidentification_count": 5,
-            "severity_level": 3,
-            "severity": "HIGH",
-            "description": "A person is seen in the image, standing near a field with a structure that appears to be a large, open-air facility. The individual is wearing casual clothing and is not holding any visible weapon. The area is mostly flat and barren, with no immediate signs of military activity or hostile intent. The presence of the structure and the person's proximity to it might suggest a potential interest in the facility, but without additional context, it is not possible to determine the exact nature of the situation.",
-            "suggest_action": "ALERT - Raise perimeter force readiness and dispatch patrol to monitor the subject loitering near the facility. The severity of the threat is currently assessed as 'MEDIUM' due to the presence of the individual and the structure, but without further information, it is not possible to escalate the threat level at this time.",
-            "evidence": {
-                "file_name": "Vehicle_005_2026-07-02T08_10_13.466667_00_00.jpg",
-                "file_size": 422680,
-                "file_url": "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237/threatimages/ec2dd1a6-acd8-42ce-af00-00bf7020a6a5/Vehicle_005_2026-07-02T08_10_13.466667_00_00.jpg"
-            },
-            "appearances": [
-                {
-                    "appearance_id": 1,
-                    "entry_time": "00:02:09",
-                    "exit_time": "00:02:10",
-                    "duration": 0.5,
-                    "confidence": 0.75,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9597395,
-                        "lon": 73.6773772,
-                        "alt": 13.58,
-                        "distance": 61.26,
-                        "heading": 359.33,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9597279,
-                        "lon": 73.677374,
-                        "alt": 12.72,
-                        "distance": 61.26,
-                        "heading": 358.94,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 53,
-                        "y": 2,
-                        "width": 19,
-                        "height": 6
-                    },
-                    "frame_range": {
-                        "start": 3891,
-                        "end": 3906
-                    }
-                },
-                {
-                    "appearance_id": 2,
-                    "entry_time": "00:02:10",
-                    "exit_time": "00:02:10",
-                    "duration": 0.3,
-                    "confidence": 0.58,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9595866,
-                        "lon": 73.6774259,
-                        "alt": 12.17,
-                        "distance": 45.94,
-                        "heading": 358.89,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595807,
-                        "lon": 73.6774261,
-                        "alt": 11.75,
-                        "distance": 45.94,
-                        "heading": 358.86,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 26,
-                        "y": 2,
-                        "width": 21,
-                        "height": 8
-                    },
-                    "frame_range": {
-                        "start": 3918,
-                        "end": 3927
-                    }
-                },
-                {
-                    "appearance_id": 3,
-                    "entry_time": "00:02:11",
-                    "exit_time": "00:02:11",
-                    "duration": 0.0,
-                    "confidence": 0.5,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.959623,
-                        "lon": 73.6773874,
-                        "alt": 11.48,
-                        "distance": 52.51,
-                        "heading": 358.8,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.959623,
-                        "lon": 73.6773874,
-                        "alt": 11.48,
-                        "distance": 52.51,
-                        "heading": 358.8,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 27,
-                        "y": 2,
-                        "width": 19,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3933,
-                        "end": 3933
-                    }
-                },
-                {
-                    "appearance_id": 4,
-                    "entry_time": "00:02:11",
-                    "exit_time": "00:02:12",
-                    "duration": 0.8,
-                    "confidence": 0.65,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596176,
-                        "lon": 73.6773862,
-                        "alt": 11.21,
-                        "distance": 52.51,
-                        "heading": 358.66,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9595979,
-                        "lon": 73.6773839,
-                        "alt": 10.18,
-                        "distance": 52.51,
-                        "heading": 358.45,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 27,
-                        "y": 2,
-                        "width": 19,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 3939,
-                        "end": 3963
-                    }
-                },
-                {
-                    "appearance_id": 5,
-                    "entry_time": "00:02:13",
-                    "exit_time": "00:02:13",
-                    "duration": 0.0,
-                    "confidence": 0.8,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596052,
-                        "lon": 73.6774381,
-                        "alt": 8.9,
-                        "distance": 52.51,
-                        "heading": 2.33,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9596052,
-                        "lon": 73.6774381,
-                        "alt": 8.9,
-                        "distance": 52.51,
-                        "heading": 2.33,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 53,
-                        "y": 2,
-                        "width": 19,
-                        "height": 7
-                    },
-                    "frame_range": {
-                        "start": 4008,
-                        "end": 4008
-                    }
-                },
-                {
-                    "appearance_id": 6,
-                    "entry_time": "00:02:14",
-                    "exit_time": "00:02:14",
-                    "duration": 0.2,
-                    "confidence": 0.55,
-                    "severity_level": 3,
-                    "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 19.9596471,
-                        "lon": 73.6773625,
-                        "alt": 7.6,
-                        "distance": 61.26,
-                        "heading": 2.19,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.959596,
-                        "lon": 73.6774354,
-                        "alt": 7.23,
-                        "distance": 52.51,
-                        "heading": 2.21,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 32,
-                        "y": 3,
-                        "width": 16,
-                        "height": 6
-                    },
-                    "frame_range": {
-                        "start": 4035,
-                        "end": 4041
-                    }
-                }
-            ]
-        },
-        {
-            "id_number": "Vehicle_006",
-            "class": "vehicle",
-            "entry_time": "00:02:10",
-            "exit_time": "00:02:10",
-            "total_duration": 0.0,
+            "entry_time": "00:00:20",
+            "exit_time": "00:00:20",
+            "total_duration": 0.4,
             "reidentification_count": 0,
-            "severity_level": 2,
-            "severity": "MEDIUM",
-            "description": "A white truck parked in a field with a fence and a building in the background, possibly a rural or agricultural area.",
-            "suggest_action": "ALERT - Raise perimeter force readiness and dispatch patrol to monitor subject loitering near sector.",
+            "severity_level": 1,
+            "severity": "LOW",
+            "description": "A small, rectangular window with a red frame is open, allowing a view of a building and a person inside. The window is situated in a room with a beige.",
+            "suggest_action": "Monitor - Alert the relevant authorities to the presence of the person in the window.",
             "evidence": {
-                "file_name": "Vehicle_006_2026-07-02T08_10_09.466667_00_00.jpg",
-                "file_size": 410550,
-                "file_url": "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237/threatimages/ec2dd1a6-acd8-42ce-af00-00bf7020a6a5/Vehicle_006_2026-07-02T08_10_09.466667_00_00.jpg"
+                "file_name": "Vehicle_002_2026-08-26T07_04_06.166667_00_00.jpg",
+                "file_size": 783208,
+                "file_url": "https://pdrlimage.blob.core.windows.net/user-694fd387-919a-4455-a194-a17a59a4e713/threatimages/f5d613dd-6b88-43eb-acd1-c80cda982d9d/Vehicle_002_2026-08-26T07_04_06.166667_00_00.jpg"
             },
             "appearances": [
                 {
                     "appearance_id": 1,
-                    "entry_time": "00:02:10",
-                    "exit_time": "00:02:10",
-                    "duration": 0.0,
-                    "confidence": 0.55,
-                    "severity_level": 2,
-                    "severity": "MEDIUM",
+                    "entry_time": "00:00:20",
+                    "exit_time": "00:00:20",
+                    "duration": 0.4,
+                    "confidence": 0.44,
+                    "severity_level": 1,
+                    "severity": "LOW",
                     "entry_location": {
-                        "lat": 19.9595387,
-                        "lon": 73.6774377,
-                        "alt": 12.31,
-                        "distance": 40.84,
-                        "heading": 358.9,
+                        "lat": 19.9939499,
+                        "lon": 73.7515463,
+                        "alt": 0.25,
+                        "distance": 13.47,
+                        "heading": 342.5,
                         "direction": "N"
                     },
                     "exit_location": {
-                        "lat": 19.9595387,
-                        "lon": 73.6774377,
-                        "alt": 12.31,
-                        "distance": 40.84,
-                        "heading": 358.9,
+                        "lat": 19.9939456,
+                        "lon": 73.7515463,
+                        "alt": 0.25,
+                        "distance": 12.99,
+                        "heading": 342.48,
                         "direction": "N"
                     },
                     "bounding_box": {
-                        "x": 4,
-                        "y": 1,
-                        "width": 20,
-                        "height": 9
+                        "x": 860,
+                        "y": 410,
+                        "width": 32,
+                        "height": 82
                     },
                     "frame_range": {
-                        "start": 3915,
-                        "end": 3915
-                    }
-                }
-            ]
-        },
-        {
-            "id_number": "Vehicle_007",
-            "class": "person",
-            "entry_time": "00:02:10",
-            "exit_time": "00:02:16",
-            "total_duration": 3.13,
-            "reidentification_count": 4,
-            "severity_level": 2,
-            "severity": "MEDIUM",
-            "description": "A person is seen in the image, standing in a field with a structure in the background. They appear to be unarmed and are not exhibiting any hostile posture or behavior.",
-            "suggest_action": "ALERT - Raise perimeter force readiness and dispatch patrol to monitor subject loitering near sector.",
-            "evidence": {
-                "file_name": "Vehicle_007_2026-07-02T08_10_13.966667_00_00.jpg",
-                "file_size": 422321,
-                "file_url": "https://pdrlimage.blob.core.windows.net/user-1022c811-4f72-4254-81e2-8f9762d2b237/threatimages/ec2dd1a6-acd8-42ce-af00-00bf7020a6a5/Vehicle_007_2026-07-02T08_10_13.966667_00_00.jpg"
-            },
-            "appearances": [
-                {
-                    "appearance_id": 1,
-                    "entry_time": "00:02:10",
-                    "exit_time": "00:02:10",
-                    "duration": 0.1,
-                    "confidence": 0.57,
-                    "severity_level": 2,
-                    "severity": "MEDIUM",
-                    "entry_location": {
-                        "lat": 19.9597197,
-                        "lon": 73.6773734,
-                        "alt": 12.17,
-                        "distance": 61.26,
-                        "heading": 358.89,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9597176,
-                        "lon": 73.6773733,
-                        "alt": 12.03,
-                        "distance": 61.26,
-                        "heading": 358.88,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 53,
-                        "y": 2,
-                        "width": 19,
-                        "height": 6
-                    },
-                    "frame_range": {
-                        "start": 3918,
-                        "end": 3921
-                    }
-                },
-                {
-                    "appearance_id": 2,
-                    "entry_time": "00:02:10",
-                    "exit_time": "00:02:12",
-                    "duration": 1.2,
-                    "confidence": 0.57,
-                    "severity_level": 2,
-                    "severity": "MEDIUM",
-                    "entry_location": {
-                        "lat": 19.9597118,
-                        "lon": 73.6773736,
-                        "alt": 11.62,
-                        "distance": 61.26,
-                        "heading": 358.85,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9596846,
-                        "lon": 73.6773731,
-                        "alt": 10.1,
-                        "distance": 61.26,
-                        "heading": 358.89,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 54,
-                        "y": 2,
-                        "width": 18,
-                        "height": 6
-                    },
-                    "frame_range": {
-                        "start": 3930,
-                        "end": 3966
-                    }
-                },
-                {
-                    "appearance_id": 3,
-                    "entry_time": "00:02:12",
-                    "exit_time": "00:02:12",
-                    "duration": 0.3,
-                    "confidence": 0.72,
-                    "severity_level": 2,
-                    "severity": "MEDIUM",
-                    "entry_location": {
-                        "lat": 19.9598596,
-                        "lon": 73.6775651,
-                        "alt": 9.72,
-                        "distance": 73.51,
-                        "heading": 1.08,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9598555,
-                        "lon": 73.6775826,
-                        "alt": 9.5,
-                        "distance": 73.51,
-                        "heading": 2.39,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 159,
-                        "y": 2,
-                        "width": 13,
-                        "height": 5
-                    },
-                    "frame_range": {
-                        "start": 3981,
-                        "end": 3990
-                    }
-                },
-                {
-                    "appearance_id": 4,
-                    "entry_time": "00:02:13",
-                    "exit_time": "00:02:13",
-                    "duration": 0.0,
-                    "confidence": 0.71,
-                    "severity_level": 2,
-                    "severity": "MEDIUM",
-                    "entry_location": {
-                        "lat": 19.9598508,
-                        "lon": 73.6775797,
-                        "alt": 9.2,
-                        "distance": 73.51,
-                        "heading": 2.44,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9598508,
-                        "lon": 73.6775797,
-                        "alt": 9.2,
-                        "distance": 73.51,
-                        "heading": 2.44,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 159,
-                        "y": 2,
-                        "width": 13,
-                        "height": 5
-                    },
-                    "frame_range": {
-                        "start": 3999,
-                        "end": 3999
-                    }
-                },
-                {
-                    "appearance_id": 5,
-                    "entry_time": "00:02:14",
-                    "exit_time": "00:02:16",
-                    "duration": 1.53,
-                    "confidence": 0.69,
-                    "severity_level": 2,
-                    "severity": "MEDIUM",
-                    "entry_location": {
-                        "lat": 19.9597966,
-                        "lon": 73.6774195,
-                        "alt": 6.67,
-                        "distance": 73.51,
-                        "heading": 2.22,
-                        "direction": "N"
-                    },
-                    "exit_location": {
-                        "lat": 19.9597916,
-                        "lon": 73.6774098,
-                        "alt": 5.32,
-                        "distance": 73.51,
-                        "heading": 2.13,
-                        "direction": "N"
-                    },
-                    "bounding_box": {
-                        "x": 98,
-                        "y": 4,
-                        "width": 11,
-                        "height": 5
-                    },
-                    "frame_range": {
-                        "start": 4050,
-                        "end": 4095
+                        "start": 606,
+                        "end": 615
                     }
                 }
             ]

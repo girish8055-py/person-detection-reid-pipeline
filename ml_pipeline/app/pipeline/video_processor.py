@@ -78,35 +78,37 @@ def _rename_identity(persons, old_id, new_id, p_data, output_folder):
 
 class VideoProcessor:
 
-    def __init__(self, model_path: str, reid_weights_path: str, confidence: float = 0.5, target_fps: int = 10):
+    def __init__(self, model_path: str, reid_weights_path: str, confidence: float = 0.25, target_fps: int = 10):
         """
         Loads YOLO + OSNet once. Reuse this instance across multiple videos
         so you don't pay model-loading cost per job.
         """
-        self.detector = PersonDetector(model_path=model_path, confidence=confidence) if model_path else None
-        self._current_model_path = model_path
-        # NOTE: identity_manager is intentionally re-created per video in
-        # process_video() below -- identities (Person_001, Person_002...)
-        # should not carry over between unrelated videos. Only the OSNet
-        # weights path is fixed here; the gallery/database itself is fresh
-        # per job.
+        self.detector = PersonDetector(model_path=model_path, confidence=confidence)
         self.reid_weights_path = reid_weights_path
         self.target_fps = target_fps
+        self._current_model_path = model_path
 
-    def process_video(self, video_path: str, output_folder: str, progress_callback=None, teledata_csv_path: str = None, telemetry_data: list = None, video_start_epoch=None, model_path: str = None, model_name: str = None):
+    def process_video(
+        self,
+        video_path: str,
+        output_folder: str,
+        progress_callback=None,
+        teledata_csv_path: str = None,
+        model_path: str = None,
+        model_name: str = None,
+        telemetry_data: list = None,
+        video_start_epoch: float = None,
+    ):
         """
-        Runs the full pipeline on a single video file.
+        Runs the full detection + ReID pipeline on a video file.
 
         Args:
-            video_path: local path to the downloaded video.
-            output_folder: where json_writer / screenshot_manager write results
-                for THIS job (keep jobs in separate folders so results don't
-                overwrite each other).
-            progress_callback: optional callable(percent: float, message: str)
-                called periodically so the web app can report progress.
-            teledata_csv_path: optional path to the drone's paired
-                offline_teledata_<flight_id>.csv. If given, every detection
-                gets tagged with lat/lon/alt/detection_time. If None, GPS
+            video_path: absolute path to source MP4/AVI file.
+            output_folder: folder where bounding box crops & results will be saved.
+            progress_callback: optional function(pct: float, msg: str) for status updates.
+            teledata_csv_path: optional path to CSV containing telemetry (GPS) data.
+                If provided AND valid, entry/exit location metadata is populated.
+                If missing or invalid, pipeline processes normally and GPS
                 fields are simply omitted (backward compatible).
             telemetry_data: optional in-memory telemetry data list.
             video_start_epoch: unix timestamp marking when the VIDEO started
@@ -118,7 +120,7 @@ class VideoProcessor:
         if model_path is not None:
             if self._current_model_path != model_path:
                 logger.info("Reloading detector model from: %s", model_path)
-                confidence = self.detector.confidence if self.detector else 0.5
+                confidence = self.detector.confidence if self.detector else 0.25
                 self.detector = PersonDetector(model_path=model_path, confidence=confidence)
                 self._current_model_path = model_path
 
@@ -250,14 +252,7 @@ class VideoProcessor:
                         x1, y1, x2, y2 = [int(v) for v in bbox[:4]]
                         person_id = det.get("person_id", "N/A")
                         conf = det.get("confidence", 0.0)
-                        pid_str = str(person_id).strip()
-                        lower = pid_str.lower()
-                        if lower.startswith(("person", "vehicle")):
-                            display_id = pid_str
-                        elif det.get("class"):
-                            display_id = f"{det['class']}_{pid_str}"
-                        else:
-                            display_id = pid_str
+                        display_id = str(person_id)
                         label = f"{display_id} ({conf:.2f})"
                         cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         cv2.putText(annotated_frame, label, (x1, max(y1 - 10, 15)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
@@ -306,42 +301,7 @@ class VideoProcessor:
                 p_data["behavior_clip"] = clip_path
                 p_data["keyframes"] = kf_paths
 
-        # ------------------------------------------------------------------
-        # VLM class verification: let the VLM independently decide whether
-        # each tracked object is a person or vehicle, correcting any YOLO
-        # misclassifications before the final result is built.
-        # ------------------------------------------------------------------
-        print("\n" + "=" * 70)
-        print("[VLM CLASS VERIFICATION] Verifying detected object classes via VLM...")
-        print("=" * 70)
 
-        for p_id, p_data in persons.items():
-            keyframes = p_data.get("keyframes", [])
-            detected_class = p_data.get("class", "person")
-            if keyframes:
-                verified_class = verify_object_class(
-                    keyframe_paths=keyframes,
-                    target_id=str(p_id),
-                    fallback_class=detected_class,
-                )
-                if verified_class != detected_class:
-                    p_data["class"] = verified_class
-                    print(
-                        f"[VLM VERIFY] Target {p_id}: "
-                        f"class corrected '{detected_class}' -> '{verified_class}'"
-                    )
-                else:
-                    print(
-                        f"[VLM VERIFY] Target {p_id}: "
-                        f"class confirmed '{verified_class}'"
-                    )
-            else:
-                print(
-                    f"[VLM VERIFY] Target {p_id}: "
-                    f"no keyframes, keeping '{detected_class}'"
-                )
-
-        print("=" * 70 + "\n")
 
         # ------------------------------------------------------------------
         # VLM behavior analysis: description, suggested action and SEVERITY
@@ -354,6 +314,8 @@ class VideoProcessor:
 
         from worker.worker import get_vlm_behavior_description_and_action
 
+        if not persons:
+            print("[VLM THREAT ANALYSIS] No tracked objects detected in this video to analyze.")
         for p_id, p_data in persons.items():
             kf_paths = p_data.get("keyframes", [])
             appearances = p_data.get("appearances", [])
@@ -374,8 +336,6 @@ class VideoProcessor:
                 get_vlm_behavior_description_and_action(pseudo_result, kf_paths)
             )
             p_data["description"] = limit_text_words(description, 30)
-            if vlm_class and vlm_class != p_data.get("class"):
-                p_data["class"] = vlm_class
 
             reid_cnt = p_data.get("reidentification_count", 0)
             sev_level, sev_label = resolve_severity(vlm_severity, reid_cnt)

@@ -144,27 +144,32 @@ def get_vlm_behavior_description_and_action(person_result, keyframe_paths):
     recon_count = person_result.get('reidentification_count', 0)
     appearances = person_result.get('appearances', [])
 
-    prompt = f"""You are a Military Intelligence Analyst examining aerial surveillance keyframes of a detected {target_class}.
+    prompt = f"""You are a Military Intelligence Analyst examining aerial surveillance keyframe crops of a detected {target_class}.
+
+CRITICAL TARGET FOCUS & CROP INSTRUCTIONS:
+- Each image is cropped around a specific detected object ({target_class}) highlighted inside a RED BOUNDING BOX.
+- Focus your description EXCLUSIVELY on the single target object inside/highlighted by the RED BOUNDING BOX.
+- Ignore all other objects, people, vehicles, or background elements present in the surrounding frame.
+- Do NOT describe the behavior or actions of any other object except the highlighted target object.
 
 YOUR TASK:
-Provide a RICH, NATURAL SITUATIONAL DESCRIPTION (MAX 30 WORDS) of what the detected {target_class} is physically doing in the real-world scene (e.g. clothing/color/type, exact movement, terrain/location like road, field, checkpoint, loitering, turning, or passing objects).
+Provide a RICH, NATURAL SITUATIONAL DESCRIPTION (MAX 30 WORDS) of ONLY the physical visual appearance, movement, and behavior of the highlighted detected {target_class}.
 
 NON-NEGOTIABLE DESCRIPTION RULES:
-- DO NOT mention "red box", "bounding box", "Target ID", "Class", or timestamps in the description.
-- DO NOT repeat the prompt's SITREP text.
-- Describe ONLY the physical visual scene, vehicle/person appearance, environmental context, and true real-world movement.
+- DO NOT mention "red box", "bounding box", "Target ID", "Class", or timestamps in the description text itself.
+- Describe ONLY the highlighted target object's visual scene, appearance, and real-world movement/behavior. Do NOT include behaviors of other objects.
 
 STEP 1 — MANDATORY WEAPON & THREAT SCAN:
 - Scan the target for WEAPONS: firearms, rifles, pistols, RPGs, explosives, knives.
 - Scan for HOSTILE ACTS or MILITARY INDICATORS: tactical gear, uniforms, body armour, aiming/firing pose.
 
 STEP 2 — DECISION & ACTION:
-- Description: 1 concise sentence (MAX 30 WORDS) detailing the exact physical appearance, color, type, environment, and visual activity of the {target_class}.
+- Description: 1 concise sentence (MAX 30 WORDS) detailing the exact physical appearance, color, type, environment, and visual activity of ONLY the highlighted target object.
 - Suggested Action: <ACTION_VERB> - <tactical order based on target activity, MAX 30 WORDS> (Verb must be MONITOR, TRACK, ALERT, or DETAIN).
 - Severity: LOW, MEDIUM, HIGH, or CRITICAL based on threat/weapon presence.
 
 RESPOND IN VALID JSON ONLY:
-{{"verified_class":"{target_class}","description":"<rich situational description of physical scene and movement, max 30 words>","suggested_action":"<ACTION_VERB> - <tactical command, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
+{{"description":"<rich situational description of ONLY the highlighted target object, max 30 words>","suggested_action":"<ACTION_VERB> - <tactical command, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
 """
 
     payload = {
@@ -194,7 +199,7 @@ RESPOND IN VALID JSON ONLY:
                 model_output = {}
             if not isinstance(model_output, dict):
                 model_output = {}
-            verified_cls = model_output.get("verified_class", target_class)
+            verified_cls = target_class
             desc = model_output.get("description", "").strip()
             act = (
                 model_output.get("suggested_action")
@@ -466,12 +471,9 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                     logger.error("[%s] %s (No fallback allowed).", server_name, err_msg)
                     raise RuntimeError(err_msg)
             else:
-                # No specific model URL in task: use default base model (models/best.pt)
-                default_local_model = os.path.join(
-                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                    "models",
-                    "best.pt"
-                )
+                default_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                finetuned_model = os.path.join(default_dir, "downloaded_model", "best.pt")
+                default_local_model = finetuned_model if os.path.exists(finetuned_model) else os.path.join(default_dir, "models", "best.pt")
                 if os.path.exists(default_local_model):
                     logger.info(
                         "[%s] No custom model URL in task. Using base model: %s",
@@ -640,10 +642,6 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                 if p_data and (p_data.get("description") or p_data.get("severity")):
                     # VLM already ran during video processing — use its description and action directly.
                     person_result["description"] = limit_text_words(p_data.get("description", ""), 30)
-                    vlm_class = p_data.get("class")
-                    if vlm_class and vlm_class != person_result.get("class"):
-                        person_result["class"] = vlm_class
-                        p_obj_class = vlm_class
                     sev_level, sev_label = resolve_severity(p_data.get("severity"), person_result.get("reidentification_count", 0))
                     person_result["severity_level"] = sev_level
                     person_result["severity"] = sev_label
@@ -659,9 +657,6 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                     # VLM not yet called — call it now with the keyframes.
                     description, suggest_action, vlm_class, vlm_severity = get_vlm_behavior_description_and_action(person_result, kf_paths)
                     person_result["description"] = limit_text_words(description, 30)
-                    if vlm_class and vlm_class != person_result.get("class"):
-                        person_result["class"] = vlm_class
-                        p_obj_class = vlm_class
                     sev_level, sev_label = resolve_severity(vlm_severity, person_result.get("reidentification_count", 0))
                     person_result["severity_level"], person_result["severity"] = sev_level, sev_label
                     person_result["suggest_action"] = ensure_detailed_suggested_action(

@@ -24,7 +24,7 @@ class ReIDConfig:
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-    similarity_threshold: float = 0.28
+    similarity_threshold: float = 0.22
     # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 

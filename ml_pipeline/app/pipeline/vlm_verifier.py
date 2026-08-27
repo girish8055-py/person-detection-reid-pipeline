@@ -69,18 +69,19 @@ def verify_object_class(
         return fallback_class
 
     prompt = (
-        "You are a drone-surveillance image classifier.\n"
-        "Look at the image(s) below. Each image shows a cropped region "
-        "around a single detected object from a surveillance video.\n\n"
-        "Classify the object as exactly ONE of:\n"
-        '  - "person" — a human being (walking, standing, crouching, etc.)\n'
-        '  - "vehicle" — a car, truck, bus, motorcycle, bicycle, or any '
-        "other wheeled or motorized transport.\n\n"
-        "Consider these visual cues:\n"
-        "  Person: bipedal posture, human torso/head/limbs, walking gait, "
-        "clothing, backpacks.\n"
-        "  Vehicle: wheels, metallic body, rectangular/elongated shape, "
-        "windshield, headlights, licence plate area.\n\n"
+        "You are an aerial drone surveillance image classifier and verifier.\n"
+        "Look closely at the image(s) below. Each image shows a cropped region "
+        "highlighted inside a red bounding box from an aerial video.\n\n"
+        "YOUR CRITICAL MISSION:\n"
+        "Verify whether the object inside the red box is ACTUALLY a person or a vehicle.\n"
+        "YOLO object detectors frequently misclassify objects (e.g. detecting a vehicle/car/truck as a person, or detecting a person as a vehicle).\n"
+        "You must examine the visual shape and features inside the red box to correct any false detection:\n"
+        '  - "person": human being, walking, standing, sitting, soldier, infantryman, head/shoulders from above.\n'
+        '  - "vehicle": car, truck, van, bus, motorcycle, bicycle, tractor, tank, or any wheeled/motorized machinery.\n\n'
+        "CRITICAL INSTRUCTIONS:\n"
+        '  - If the detector labeled it as a person but visually it is a vehicle/car/truck, you MUST classify it as "vehicle".\n'
+        '  - If the detector labeled it as a vehicle but visually it is a person/human, you MUST classify it as "person".\n'
+        "  - Base your classification strictly on the true physical shape inside the red bounding box.\n\n"
         "Respond with ONLY a JSON object:\n"
         '{"classification": "person"} OR {"classification": "vehicle"}'
     )
@@ -91,6 +92,7 @@ def verify_object_class(
         "images": images_b64,
         "stream": False,
         "format": "json",
+        "options": {"temperature": 0.1},
     }
 
     try:
