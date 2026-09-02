@@ -12,7 +12,7 @@ TEST_BASE_URL = "http://114.143.215.196:5005/AeroMegh/idms"
 PROD_BASE_URL = "https://idmsapi.aerogcs.com/AeroMegh/idms"
 
 # For backwards compatibility
-BASE_URL = PROD_BASE_URL
+BASE_URL = TEST_BASE_URL
 PENDING_API = f"{BASE_URL}/detection/pending"
 
 # --------------------------------------------------------

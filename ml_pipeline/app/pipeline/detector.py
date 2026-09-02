@@ -12,12 +12,7 @@ from ultralytics import YOLO
 
 
 def normalize_class(name: str) -> str:
-    if not name:
-        return "person"
-    name_lower = str(name).lower().strip()
-    if name_lower in ["person", "human", "pedestrian", "people", "camouflage_soldier", "soldier", "military", "man", "woman", "child"]:
-        return "person"
-    return "vehicle"
+    return str(name).lower().strip()
 
 
 class PersonDetector:
@@ -85,7 +80,8 @@ class PersonDetector:
                 if w < self.min_box_width or h < self.min_box_height or (w * h) < self.min_box_area:
                     continue
 
-                raw_class = self.model.names.get(int(box.cls.item()), "person")
+                class_id = int(box.cls.item())
+                raw_class = self.model.name.get(class_id,f"class_{class_id}")
 
                 detections.append(
                     {
