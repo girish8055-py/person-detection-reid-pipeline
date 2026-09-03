@@ -144,32 +144,34 @@ def get_vlm_behavior_description_and_action(person_result, keyframe_paths):
     recon_count = person_result.get('reidentification_count', 0)
     appearances = person_result.get('appearances', [])
 
-    prompt = f"""You are a Military Intelligence Analyst examining aerial surveillance keyframe crops of a detected {target_class}.
+    prompt = f"""You are a Military Intelligence Analyst examining aerial surveillance frames of a detected {target_class}.
 
-CRITICAL TARGET FOCUS & CROP INSTRUCTIONS:
-- Each image is cropped around a specific detected object ({target_class}) highlighted inside a RED BOUNDING BOX.
-- Focus your description EXCLUSIVELY on the single target object inside/highlighted by the RED BOUNDING BOX.
-- Ignore all other objects, people, vehicles, or background elements present in the surrounding frame.
-- Do NOT describe the behavior or actions of any other object except the highlighted target object.
+CRITICAL TARGET FOCUS INSTRUCTIONS:
+- You are provided with sequential frames (sampled 1 frame every 2 seconds) of a detected target ({target_class}) highlighted inside a RED BOUNDING BOX.
+- Focus your description EXCLUSIVELY on the single target object highlighted inside the RED BOUNDING BOX.
+- Use the surrounding scene context (fences, buildings, vehicles, terrain) to describe the real-world activity, appearance, and movement of the target.
+- NEVER write the words "red box", "bounding box", "crop", "red outline", "Target ID", or "Class" anywhere in your text description.
+- Describe the subject directly as if observing them in real life (e.g. "A person wearing a dark jacket walking near the perimeter fence").
+- Ignore all other people, vehicles, or objects not inside the target's bounding box.
 
 YOUR TASK:
-Provide a RICH, NATURAL SITUATIONAL DESCRIPTION (MAX 30 WORDS) of ONLY the physical visual appearance, movement, and behavior of the highlighted detected {target_class}.
+Provide a RICH, NATURAL SITUATIONAL DESCRIPTION (MAX 30 WORDS) of ONLY the physical visual appearance, movement, and behavior of the target {target_class}.
 
 NON-NEGOTIABLE DESCRIPTION RULES:
-- DO NOT mention "red box", "bounding box", "Target ID", "Class", or timestamps in the description text itself.
-- Describe ONLY the highlighted target object's visual scene, appearance, and real-world movement/behavior. Do NOT include behaviors of other objects.
+- DO NOT mention "red box", "bounding box", "red outline", "crop", "Target ID", "Class", or timestamps in the description text itself.
+- Describe ONLY the target object's real-world appearance and behavior directly.
 
 STEP 1 — MANDATORY WEAPON & THREAT SCAN:
 - Scan the target for WEAPONS: firearms, rifles, pistols, RPGs, explosives, knives.
 - Scan for HOSTILE ACTS or MILITARY INDICATORS: tactical gear, uniforms, body armour, aiming/firing pose.
 
 STEP 2 — DECISION & ACTION:
-- Description: 1 concise sentence (MAX 30 WORDS) detailing the exact physical appearance, color, type, environment, and visual activity of ONLY the highlighted target object.
+- Description: 1 concise sentence (MAX 30 WORDS) detailing the exact physical appearance, color, type, environment, and visual activity of the target object.
 - Suggested Action: <ACTION_VERB> - <tactical order based on target activity, MAX 30 WORDS> (Verb must be MONITOR, TRACK, ALERT, or DETAIN).
 - Severity: LOW, MEDIUM, HIGH, or CRITICAL based on threat/weapon presence.
 
 RESPOND IN VALID JSON ONLY:
-{{"description":"<rich situational description of ONLY the highlighted target object, max 30 words>","suggested_action":"<ACTION_VERB> - <tactical command, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
+{{"description":"<rich situational description of ONLY the target object, max 30 words>","suggested_action":"<ACTION_VERB> - <tactical command, max 30 words>","severity":"<LOW/MEDIUM/HIGH/CRITICAL>"}}
 """
 
     payload = {

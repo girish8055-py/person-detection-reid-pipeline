@@ -104,13 +104,48 @@ def resolve_severity(vlm_severity, reid_count=0):
     return get_severity_level(reid_count)
 
 
+import re
+
+
+def clean_vlm_description(text: str) -> str:
+    """
+    Strips out any accidental VLM meta-references to 'red box', 'bounding box',
+    'cropped region', 'red outline', etc. from description text.
+    """
+    if not text:
+        return ""
+    cleaned = str(text)
+    patterns = [
+        r'\b(?:inside|in|within|highlighted by|surrounded by|bounded by)\s+(?:the|a)\s+(?:red\s+)?(?:bounding\s+)?box\b,?\s*',
+        r'\b(?:the\s+)?red\s+(?:bounding\s+)?box\s+(?:shows|contains|highlights|indicates|marks)\s*(?:a|an|the)?\s*',
+        r'\s*(?:inside|in|within)\s+(?:the|a)\s+(?:red\s+)?(?:bounding\s+)?box\.?\s*',
+        r'\s*(?:inside|in|within)\s+(?:the|a)\s+(?:red\s+)?(?:outline|crop|cropped\s+region)\.?\s*',
+        r'\b(?:the\s+)?red\s+(?:bounding\s+)?box\b,?\s*',
+        r'\b(?:the\s+)?bounding\s+box\b,?\s*',
+        r'\b(?:the\s+)?red\s+outline\b,?\s*',
+        r'\b(?:in|inside)\s+the\s+cropped\s+image\b,?\s*',
+        r'\b(?:the\s+)?cropped\s+image\b,?\s*',
+    ]
+    for pat in patterns:
+        cleaned = re.sub(pat, ' ', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    cleaned = re.sub(r'\s+\.', '.', cleaned)
+    cleaned = re.sub(r'^(?:,\s*|;\s*|\.\s*)+', '', cleaned)
+    cleaned = re.sub(r'^(?:a|an|the)\s+(a|an|the)\s+', r'\1 ', cleaned, flags=re.IGNORECASE)
+    if cleaned and not cleaned[0].isupper():
+        cleaned = cleaned[0].upper() + cleaned[1:]
+    return cleaned
+
+
 def limit_text_words(text, max_words=30):
     """
     Ensures text is at most max_words long. If longer, truncates to max_words
     and formats cleanly with a period.
+    Strips out any meta-references to 'red box' or 'bounding box'.
     """
     if not text:
         return ""
+    text = clean_vlm_description(text)
     words = str(text).strip().split()
     if len(words) <= max_words:
         return str(text).strip()

@@ -375,12 +375,12 @@ class VideoProcessor:
 
 def extract_behavior_clip_and_keyframes(video_path: str, best_time: float, fps: float, output_folder: str, person_id: str, entry_time: float = None, exit_time: float = None, target_bbox=None):
     """
-    Extracts keyframes at entry_time, middle, and exit_time, as well as a behavior clip.
+    Extracts context keyframes sampled at 0.5 FPS (1 frame every 2 seconds)
+    across the active trajectory of the target, as well as a behavior clip.
 
-    target_bbox: (x1, y1, x2, y2) bounding box of the specific target to crop into.
-        When provided, each keyframe is cropped and highlighted to ONLY show the target
-        object, preventing the VLM from describing a different object in the same scene.
-        If None, the full frame is saved (fallback for when bbox is unavailable).
+    target_bbox: (x1, y1, x2, y2) bounding box of the specific target.
+        The target's red bounding box is drawn onto each context frame so the VLM
+        maintains exact target focus within full scene context.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -404,8 +404,6 @@ def extract_behavior_clip_and_keyframes(video_path: str, best_time: float, fps: 
     end_frame = int(end_time * fps)
 
     pid_str = str(person_id).lower()
-    # Keep the ID's own class prefix (person_001 / vehicle_001); only
-    # fall back to person_ for legacy numeric-only ids.
     folder_name = pid_str if pid_str.startswith(("person_", "vehicle_")) else f"person_{pid_str}"
     person_folder = os.path.join(output_folder, folder_name)
     os.makedirs(person_folder, exist_ok=True)
@@ -414,71 +412,67 @@ def extract_behavior_clip_and_keyframes(video_path: str, best_time: float, fps: 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(clip_path, fourcc, fps, (width, height))
 
+    def _annotate_context_frame(frame, bbox, pid):
+        """
+        Draw a prominent red bounding box around the target object in the frame,
+        providing full environmental context while clearly identifying the target.
+        """
+        if bbox is None:
+            return frame
+        try:
+            x1, y1, x2, y2 = [int(v) for v in bbox[:4]]
+        except (TypeError, ValueError, IndexError):
+            return frame
+
+        annotated = frame.copy()
+        # Draw red bounding box (3px thick) around the target
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 0, 255), 3)
+
+        label = f"Target {pid}"
+        cv2.putText(
+            annotated,
+            label,
+            (x1, max(y1 - 10, 25)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 0, 255),
+            2
+        )
+        return annotated
+
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
     frames = []
-    
+
     current_frame = start_frame
     while current_frame <= end_frame:
         ret, frame = cap.read()
         if not ret:
             break
-        out.write(frame)
-        frames.append(frame.copy())
+        # Draw target bounding box on every frame written to behavior_clip.mp4
+        annotated_frame = _annotate_context_frame(frame, target_bbox, person_id)
+        out.write(annotated_frame)
+        frames.append(annotated_frame)
         current_frame += 1
 
     cap.release()
     out.release()
 
-    def _crop_to_target(frame, bbox, pad_ratio=0.15):
-        """
-        Crop the frame to the specific target bounding box with padding.
-        Draws a red highlight rectangle so the VLM knows exactly which
-        object to analyse when multiple objects are present in the scene.
-        """
-        h, w = frame.shape[:2]
-        try:
-            x1, y1, x2, y2 = [int(v) for v in bbox[:4]]
-        except (TypeError, ValueError, IndexError):
-            return frame  # malformed bbox — return full frame as fallback
-
-        # Apply padding to give the VLM context around the target
-        bw = x2 - x1
-        bh = y2 - y1
-        pad_x = int(bw * pad_ratio)
-        pad_y = int(bh * pad_ratio)
-        cx1 = max(0, x1 - pad_x)
-        cy1 = max(0, y1 - pad_y)
-        cx2 = min(w, x2 + pad_x)
-        cy2 = min(h, y2 + pad_y)
-
-        cropped = frame[cy1:cy2, cx1:cx2].copy()
-
-        # Draw a red bounding box to highlight the target inside the crop
-        local_x1 = x1 - cx1
-        local_y1 = y1 - cy1
-        local_x2 = x2 - cx1
-        local_y2 = y2 - cy1
-        cv2.rectangle(cropped, (local_x1, local_y1), (local_x2, local_y2), (0, 0, 255), 3)
-
-        return cropped
-
-    # Extract keyframes (entry frame, middle frame, exit frame)
+    # Sample keyframes at 0.5 FPS (1 frame every 2 seconds)
     keyframe_paths = []
     if frames:
-        kf_candidates = [frames[0]]
-        if len(frames) > 2:
-            kf_candidates.append(frames[len(frames) // 2])
-        kf_candidates.append(frames[-1])
+        sample_step = max(1, int(round(fps * 2.0)))
+        kf_candidates = []
+        for idx in range(0, len(frames), sample_step):
+            kf_candidates.append((idx, frames[idx]))
+        
+        # Ensure the final frame is included if not already present
+        if (len(frames) - 1) not in [idx for idx, _ in kf_candidates]:
+            kf_candidates.append((len(frames) - 1, frames[-1]))
 
-        kf_names = ["entry_frame.jpg", "middle_frame.jpg", "exit_frame.jpg"][:len(kf_candidates)]
-
-        for kf_frame, kf_name in zip(kf_candidates, kf_names):
-            if target_bbox is not None:
-                # Crop tightly to the specific target to prevent VLM from
-                # describing another object in the same scene.
-                save_frame = _crop_to_target(kf_frame, target_bbox)
-            else:
-                save_frame = kf_frame
+        for seq_num, (f_idx, kf_frame) in enumerate(kf_candidates, 1):
+            sec_offset = f_idx / fps if fps > 0 else 0
+            kf_name = f"context_frame_{seq_num:02d}_{sec_offset:.1f}s.jpg"
+            save_frame = _annotate_context_frame(kf_frame, target_bbox, person_id)
             kf_path = os.path.join(person_folder, kf_name)
             cv2.imwrite(kf_path, save_frame)
             keyframe_paths.append(kf_path)
