@@ -13,6 +13,7 @@ __pycache__/
 # Large local model weights & binary blobs
 *.pth
 *.pt
+!ml_pipeline/app/models/osnet_ain_x1_0_imagenet.pth
 ml_pipeline/app/vlm_models/
 ml_pipeline/app/downloaded_model/
 
