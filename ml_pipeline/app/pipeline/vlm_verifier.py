@@ -20,7 +20,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
 
 
 def _encode_image(image_path: str) -> Optional[str]:
@@ -86,7 +86,7 @@ def verify_object_class(
     )
 
     payload = {
-        "model": "llava:latest",
+        "model": "qwen2.5vl:3b",
         "prompt": prompt,
         "images": images_b64,
         "stream": False,

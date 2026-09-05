@@ -15,7 +15,29 @@ import threading
 import time
 
 from pipeline.video_processor import VideoProcessor
-from worker.worker import worker_loop, TEST_BASE_URL, PROD_BASE_URL
+from worker.worker import start_worker
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Load environment variables (.env file)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # Fallback env parser checking current dir, parent dir, and root project dir
+    for candidate in [
+        os.path.join(BASE_DIR, ".env"),
+        os.path.join(os.path.dirname(BASE_DIR), ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), ".env"),
+    ]:
+        if os.path.exists(candidate):
+            with open(candidate, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ[k.strip()] = v.strip()
+            break
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,14 +45,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------- #
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Set OLLAMA_MODELS to point directly to local vlm_models folder inside the project
+VLM_MODELS_PATH = os.path.join(BASE_DIR, "vlm_models")
+if os.path.exists(VLM_MODELS_PATH):
+    os.environ["OLLAMA_MODELS"] = VLM_MODELS_PATH
+
 DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "best.pt")
-MODEL_PATH = DEFAULT_MODEL if os.path.exists(DEFAULT_MODEL) else os.path.join(BASE_DIR, "models", "best.pt")
+if os.path.exists(DEFAULT_MODEL):
+    MODEL_PATH = DEFAULT_MODEL
+else:
+    print(f"Model URL is not present and downloaded model is missing at: {DEFAULT_MODEL}")
+    MODEL_PATH = DEFAULT_MODEL
 REID_WEIGHTS_PATH = os.path.join(
     BASE_DIR,
     "models",
-    "osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth"
+    "osnet_ain_x1_0_imagenet.pth"
 )
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "upload")
 OUTPUT_ROOT = os.path.join(BASE_DIR, "outputs")
@@ -43,34 +72,16 @@ processor = VideoProcessor(
     model_path=MODEL_PATH,
     reid_weights_path=REID_WEIGHTS_PATH,
     confidence=0.25,
-    target_fps=10,
+    target_fps=2,
 )
 
 processing_lock = threading.Lock()  # ensures only one video processes at a time
 
 
 if __name__ == "__main__":
-    logger.info("Starting Production Pipeline Workers...")
-
+    logger.info("Starting Automatic Multi-Server Pipeline Worker...")
     current_module = sys.modules[__name__]
-
-    # Start Test Server background worker
-    test_thread = threading.Thread(
-        target=worker_loop,
-        args=(current_module, "Test Server", TEST_BASE_URL),
-        daemon=True
-    )
-    test_thread.start()
-    logger.info("Background Worker for Test Server Started")
-
-    # Start Production Server background worker
-    prod_thread = threading.Thread(
-        target=worker_loop,
-        args=(current_module, "Production Server", PROD_BASE_URL),
-        daemon=True
-    )
-    prod_thread.start()
-    logger.info("Background Worker for Production Server Started")
+    start_worker(current_module)
 
     try:
         while True:

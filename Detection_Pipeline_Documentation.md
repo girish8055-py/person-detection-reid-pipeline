@@ -1,13 +1,13 @@
-# 🎯 Person Detection, Re-Identification & VLM Threat Assessment Pipeline
+# 🎯 Person Detection, OSNet AIN Re-Identification & VLM Threat Assessment Pipeline
 ## Master Technical Specification & Architecture Document
 
 ---
 
 ## 📑 Executive Summary
 
-The **Person Detection, Re-Identification & VLM Threat Assessment Pipeline** is an end-to-end computer vision and artificial intelligence engine designed for autonomous drone surveillance and aerial security monitoring.
+The **Person Detection, OSNet AIN Re-Identification & VLM Threat Assessment Pipeline** is an end-to-end computer vision and artificial intelligence engine designed for autonomous drone surveillance, aerial security monitoring, and target re-identification.
 
-The system integrates multi-object detection (custom YOLO), frame-to-frame tracking (ByteTrack), deep appearance re-identification (OSNet), drone telemetry fusion (GPS/Compass logging), local Vision-Language Model threat assessment (Ollama LLaVA), and cloud evidence upload (Azure Blob Storage).
+The system integrates multi-object detection (custom YOLO), frame-to-frame tracking (ByteTrack), deep appearance re-identification with multi-pose feature banks (OSNet AIN), drone telemetry fusion (GPS/Compass logging), local Vision-Language Model threat assessment (Ollama Qwen2.5-VL / LLaVA), and cloud evidence upload (Azure Blob Storage), with automated post-processing disk cleanup.
 
 ---
 
@@ -25,8 +25,8 @@ The system integrates multi-object detection (custom YOLO), frame-to-frame track
                                                |
                                                v
                              +-----------------------------------+
-                             |   Custom YOLO Person Detector     |
-                             |      (class_id = 0, conf >= 0.5)  |
+                             |   Custom YOLO Person/Vehicle/     |
+                             |         Drone Detector            |
                              +-----------------------------------+
                                                |
                                                v
@@ -36,14 +36,15 @@ The system integrates multi-object detection (custom YOLO), frame-to-frame track
                                                |
                                                v
                              +-----------------------------------+
-                             |  OSNet Re-ID Feature Extractor    |
-                             | (512-d L2 Normalized Vector)      |
+                             |  OSNet AIN Re-ID Feature Engine   |
+                             | (Adaptive Instance Normalization) |
                              +-----------------------------------+
                                                |
                                                v
                              +-----------------------------------+
-                             | Identity Gallery Search & Match   |
-                             |   (Cosine Sim Cutoff = 0.68)      |
+                             | Multi-Embedding Feature Bank      |
+                             | (Up to 10 Pose/Angle Keyframes)   |
+                             |   (Cosine Sim Cutoff = 0.28)      |
                              +-----------------------------------+
                                                |
                                                v
@@ -54,7 +55,7 @@ The system integrates multi-object detection (custom YOLO), frame-to-frame track
                                                |
                                                v
                              +-----------------------------------+
-                             |   Ollama LLaVA VLM Threat Engine  |
+                             | Ollama Qwen2.5-VL / LLaVA Engine  |
                              | (Description, Action, Severity)   |
                              +-----------------------------------+
                                                |
@@ -76,6 +77,12 @@ The system integrates multi-object detection (custom YOLO), frame-to-frame track
                                                |
                                                v
                              +-----------------------------------+
+                             | Post-Processing Disk Space        |
+                             | Cleanup (Video, CSV, Outputs)     |
+                             +-----------------------------------+
+                                               |
+                                               v
+                             +-----------------------------------+
                              |  Final Structured JSON Payload    |
                              +-----------------------------------+
 ```
@@ -85,7 +92,8 @@ The system integrates multi-object detection (custom YOLO), frame-to-frame track
 ## 🤖 2. Vision-Language Model (VLM) & Threat Intelligence Engine
 
 ### 2.1 Local VLM Architecture
-The pipeline calls a local **LLaVA Vision-Language Model** served via Ollama (`http://localhost:11434/api/generate`) using low temperature (`0.2`) for deterministic tactical threat evaluation.
+The pipeline calls a local **Qwen2.5-VL / LLaVA Vision-Language Model** served via Ollama (`http://localhost:11434/api/generate`) using low temperature (`0.2`) for deterministic tactical threat evaluation.
+All model weights are stored locally inside the project folder at `ml_pipeline/app/vlm_models/`.
 
 ### 2.2 Dual-Pass Non-Null Severity Resolution (`resolve_severity`)
 To guarantee that no threat assessment results in `null` severity:
@@ -99,81 +107,23 @@ To guarantee that no threat assessment results in `null` severity:
 | **Level 3** | **HIGH** | 7 – 8 Re-IDs | Prolonged presence (> 120s), tactical/suspicious posture. |
 | **Level 4** | **CRITICAL** | 9+ Re-IDs | Visible firearm/weapon, active firing, hostile engagement. |
 
-### 2.3 Tactical Action Directive Expansion (`ensure_detailed_suggested_action`)
-Single-word VLM recommendations (e.g. `"monitor"`, `"track"`, `"alert"`, `"detain"`) are automatically post-processed and expanded into complete Army-Chief tactical directives:
-- **`MONITOR`** → `"MONITOR — Maintain passive surveillance on Target Target_1 and log movement patterns across area."`
-- **`TRACK`** → `"TRACK — Actively track Target Target_1 with drone sensors; observe for loitering or hostile activity."`
-- **`ALERT`** → `"ALERT — Raise force readiness level and notify perimeter security units regarding Target Target_1."`
-- **`DETAIN`** → `"DETAIN — Dispatch Quick Reaction Force (QRF) to intercept and challenge Target Target_1 immediately."`
+---
+
+## 🧬 3. OSNet AIN & Multi-Embedding Feature Bank Engine
+
+### 3.1 Adaptive Instance Normalization (AIN)
+The ReID subsystem uses `osnet_ain_x1_0` to normalize out cross-domain variations (lighting shifts, shadows, motion blur, and camera resolution differences). Local weights are saved in `ml_pipeline/app/models/osnet_ain_x1_0_imagenet.pth`.
+
+### 3.2 Multi-Embedding Feature Bank
+Instead of storing a single moving-average feature vector per target:
+- Each target record stores a **Feature Bank of up to 10 diverse pose/angle keyframe embeddings**.
+- When searching the gallery, cosine similarity is computed against **all feature bank embeddings** per candidate target.
+- If ANY stored pose clears the threshold (`0.28`), the candidate target is re-identified, eliminating duplicate ID creation when targets turn around or change viewing angle.
 
 ---
 
-## 🔍 3. Core Modules & Component Responsibilities
+## 🧹 4. Automated Post-Processing Cleanup
 
-| File Path | Component Name | Functionality & Key Responsibilities |
-| :--- | :--- | :--- |
-| `app/pipeline/detector.py` | **Person Detector** | Executes YOLO object detection fine-tuned for small aerial targets (`class_id=0`) and runs ByteTrack tracking. |
-| `app/pipeline/identity_manager.py` | **Identity Brain** | Computes 512-dimensional OSNet deep feature vectors, manages identity gallery matching (threshold `0.68`), and maintains EMA embedding updates (`alpha=0.2`). |
-| `app/pipeline/video_processor.py` | **Pipeline Orchestrator** | Controls 10 FPS frame decimation, coordinate accumulation, keyframe snapshot extraction, and VLM evaluation workflow. |
-| `app/pipeline/vlm_verifier.py` | **VLM Verifier** | Performs multi-crop visual classification verification to confirm object classes (`person`, `vehicle`, etc.). |
-| `app/pipeline/utils.py` | **Pipeline Utilities** | Implements `resolve_severity()` and `ensure_detailed_suggested_action()`, timestamp formatters, and cardinal heading algorithms. |
-| `app/pipeline/telemetry.py` | **GPS Fusion Engine** | Parses drone CSV telemetry logs (`offline_teledata_`), interpolates latitude/longitude/altitude per frame, and computes cardinal headings. |
-| `app/pipeline/json_writer.py` | **JSON Output Exporter** | Generates localized structured output files (`metadata.json`) containing complete appearance histories. |
-
----
-
-## ⚙️ 4. System Hyperparameters & Technical Cutoffs
-
-| Configuration Parameter | Value | Technical Rationale |
-| :--- | :--- | :--- |
-| **Target Processing FPS** | `10 FPS` | Optimal trade-off between tracking accuracy and real-time processing throughput. |
-| **Detection Confidence Cutoff** | `0.50` | Filters out low-confidence background clutter while retaining small aerial targets. |
-| **Re-ID Similarity Threshold** | `0.68` | Cosine similarity threshold for identifying re-entering targets across long occlusions. |
-| **Re-ID Embedding Dimension** | `512` | L2-normalized feature representation from OSNet deep neural network. |
-| **VLM Model Name** | `llava:latest` | Multimodal Vision-Language Model hosted locally on Ollama. |
-| **VLM Temperature** | `0.20` | Ensures deterministic and repeatable threat evaluation. |
-
----
-
-## 📄 5. Sample Output Metadata Schema (`metadata.json`)
-
-```json
-{
-    "id_number": "Person_001",
-    "class": "person",
-    "total_duration": 14.5,
-    "reidentification_count": 2,
-    "severity_level": 3,
-    "severity": "HIGH",
-    "description": "Individual in dark tactical clothing loitering near perimeter boundary.",
-    "suggest_action": "ALERT — Raise force readiness level and notify perimeter security units regarding Target Person_001.",
-    "appearances": [
-        {
-            "appearance_id": 1,
-            "entry_time": "00:00:02",
-            "exit_time": "00:00:10",
-            "duration": 8.0,
-            "severity_level": 3,
-            "severity": "HIGH",
-            "entry_location": {
-                "lat": 18.52043,
-                "lon": 73.85674,
-                "alt": 45.2,
-                "distance": 12.4,
-                "heading": 45.0,
-                "direction": "NE",
-                "detection_time": "2026-08-25T11:00:00"
-            },
-            "exit_location": {
-                "lat": 18.52046,
-                "lon": 73.85677,
-                "alt": 45.2,
-                "distance": 12.6,
-                "heading": 46.5,
-                "direction": "NE",
-                "detection_time": "2026-08-25T11:00:08"
-            }
-        }
-    ]
-}
-```
+To prevent local disk storage from filling up during continuous live processing on servers:
+- Downloaded video files (`.mp4`) and telemetry CSVs are automatically deleted in a `finally` block upon job completion.
+- Local output directories (`outputs/{task_id}/`) containing keyframes, annotated videos, and cropped snapshots are cleaned up after evidence is successfully uploaded to Azure Blob Storage and callbacks are pushed to the backend server.

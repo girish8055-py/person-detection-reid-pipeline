@@ -5,32 +5,33 @@
 
 ## 📑 Executive Summary
 
-This document specifies the REST API contracts, background worker polling mechanics, Azure Blob Storage upload workflow, and payload schemas for integrating the **Person Detection, Re-Identification & VLM Threat Assessment Pipeline** with central backend management servers.
+This document specifies the REST API contracts, automatic multi-server background worker polling mechanics, Azure Blob Storage upload workflow, disk space cleanup routines, and payload schemas for integrating the **Person Detection, OSNet AIN Re-Identification & VLM Threat Assessment Pipeline** with backend management servers.
 
 ---
 
-## 🔄 1. Autonomous Worker Architecture (`worker.py`)
+## 🔄 1. Automatic Multi-Server Worker Architecture (`worker.py`)
 
-The background service operates as an autonomous event loop:
+The background service operates as an autonomous event loop polling across configured servers:
 
 ```
  +-------------------------------------------------------------------------------+
- |                           BACKGROUND WORKER EVENT LOOP                         |
+ |                     AUTOMATIC MULTI-SERVER WORKER EVENT LOOP                  |
  +-------------------------------------------------------------------------------+
                                          |
                                          v
          +---------------------------------------------------------------+
-         | 1. Query Pending Job: GET /detection/pending                  |
+         | 1. Auto-Poll Servers: GET /detection/pending                  |
+         |    (Polls Test & Production servers automatically)             |
          +---------------------------------------------------------------+
                                          |
                                          v
          +---------------------------------------------------------------+
-         | 2. Download Video File & Telemetry CSV to local cache         |
+         | 2. Download Video File & Telemetry CSV to temporary cache     |
          +---------------------------------------------------------------+
                                          |
                                          v
          +---------------------------------------------------------------+
-         | 3. Execute Detection, OSNet Re-ID & VLM Threat Assessment    |
+         | 3. Execute Detection, OSNet AIN Re-ID & VLM Threat Engine    |
          +---------------------------------------------------------------+
                                          |
                                          v
@@ -42,6 +43,11 @@ The background service operates as an autonomous event loop:
          +---------------------------------------------------------------+
          | 5. Post Completion Callback: PUT /detection/update/{task_id}  |
          +---------------------------------------------------------------+
+                                         |
+                                         v
+         +---------------------------------------------------------------+
+         | 6. Automatic Cleanup: Delete Video, CSV, & Output Directory   |
+         +---------------------------------------------------------------+
 ```
 
 ---
@@ -49,7 +55,9 @@ The background service operates as an autonomous event loop:
 ## 🌐 2. Endpoints & REST API Specifications
 
 ### 2.1 Fetch Pending Tasks (`GET /detection/pending`)
-- **URL**: `http://<SERVER_IP>:<PORT>/AeroMegh/idms/detection/pending`
+- **Server Endpoints**:
+  - Test Server: `http://114.143.215.196:5005/AeroMegh/idms/detection/pending`
+  - Production Server: `https://idmsapi.aerogcs.com/AeroMegh/idms/detection/pending`
 - **Method**: `GET`
 - **Response HTTP 200 (Task Available)**:
 ```json
@@ -66,7 +74,7 @@ The background service operates as an autonomous event loop:
 ---
 
 ### 2.2 Update Job Status / Completion (`PUT /detection/update/{task_id}`)
-- **URL**: `http://<SERVER_IP>:<PORT>/AeroMegh/idms/detection/update/{task_id}`
+- **URL**: `{active_base_url}/detection/update/{task_id}`
 - **Method**: `PUT`
 - **Headers**: `Content-Type: application/json`
 
@@ -84,8 +92,8 @@ The background service operates as an autonomous event loop:
             "reidentification_count": 2,
             "severity_level": 3,
             "severity": "HIGH",
-            "description": "Individual in dark jacket observed loitering near perimeter boundary.",
-            "suggest_action": "ALERT — Raise force readiness level and notify perimeter security units regarding Target Person_001.",
+            "description": "Individual in dark jacket observed walking near perimeter path.",
+            "suggest_action": "MONITOR — Keep close watch on target person movements and behavior.",
             "evidence": {
                 "file_name": "Person_001_detection.jpg",
                 "file_size": 245120,
@@ -100,32 +108,8 @@ The background service operates as an autonomous event loop:
                     "confidence": 0.89,
                     "severity_level": 3,
                     "severity": "HIGH",
-                    "entry_location": {
-                        "lat": 18.52043,
-                        "lon": 73.85674,
-                        "alt": 45.2,
-                        "distance": 12.4,
-                        "heading": 45.0,
-                        "direction": "NE"
-                    },
-                    "exit_location": {
-                        "lat": 18.52046,
-                        "lon": 73.85677,
-                        "alt": 45.2,
-                        "distance": 12.6,
-                        "heading": 46.5,
-                        "direction": "NE"
-                    },
-                    "bounding_box": {
-                        "x": 320.5,
-                        "y": 140.2,
-                        "width": 85.0,
-                        "height": 190.4
-                    },
-                    "frame_range": {
-                        "start": 20,
-                        "end": 100
-                    }
+                    "entry_location": { "lat": 18.52043, "lon": 73.85674, "alt": 45.2, "direction": "NE" },
+                    "exit_location": { "lat": 18.52046, "lon": 73.85677, "alt": 45.2, "direction": "NE" }
                 }
             ]
         }
@@ -135,22 +119,8 @@ The background service operates as an autonomous event loop:
 
 ---
 
-## ☁️ 3. Azure Blob Storage Upload Integration
+## 🧹 3. Automatic Disk Space Cleanup Protocol
 
-Target evidence crop images (`Person_001_detection.jpg`) are automatically uploaded to Azure Blob Storage using container SAS authorization tokens.
-
-- **Storage Target Path**:
-  `https://<blob-account>.blob.core.windows.net/<container>/threatimages/<flight_id>/<filename>.jpg`
-- **HTTP Method**: `PUT`
-- **Required Header**: `x-ms-blob-type: BlockBlob`
-- **Fallback URL**: If Azure upload fails or SAS token expires, the system gracefully logs the failure and generates a formatted fallback URL to ensure pipeline continuity.
-
----
-
-## 🛡️ 4. Payload Field Guarantee: Zero Null Severities & Detailed Actions
-
-As guaranteed by the worker engine and result builder (`result_builder.py`):
-1. **`severity_level`**: Always an integer `[1, 4]`. Never `null`.
-2. **`severity`**: Always a string `["LOW", "MEDIUM", "HIGH", "CRITICAL"]`. Never `null`.
-3. **`suggest_action`**: Always a complete tactical directive (e.g. `"MONITOR — Maintain passive surveillance..."`). Never a single-word string.
-4. **`description`**: Always a visual summary sentence (VLM or spatial trajectory fallback).
+When running live on servers, disk space is preserved by executing automated cleanup in a `finally` block:
+1. **Downloaded Input Files**: Temporary `.mp4` video downloads and `.csv` telemetry files are deleted immediately after processing.
+2. **Local Output Directories**: The local output folder (`outputs/{task_id}/`) containing intermediate keyframe crops, annotated videos, and temporary files is recursively deleted after evidence upload and callback completion.

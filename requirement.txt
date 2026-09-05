@@ -3,3 +3,13 @@ opencv-python
 numpy
 torch
 torchvision
+torchreid
+scipy
+pillow
+requests
+flask
+gdown
+yacs
+h5py
+tensorboard
+pyyaml

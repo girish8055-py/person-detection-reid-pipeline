@@ -30,6 +30,15 @@ class PersonRecord:
     obj_class: str = "person"        # "person" / "vehicle" -- keeps ID prefix consistent with class
     hits: int = 1                    # how many times this identity has been matched
     embedding_history_len: int = field(default=1, repr=False)
+    feature_bank: List[np.ndarray] = field(default_factory=list, repr=False)
+
+    def __post_init__(self):
+        if not self.feature_bank and self.embedding is not None:
+            norm_emb = np.asarray(self.embedding, dtype=np.float32)
+            n = np.linalg.norm(norm_emb)
+            if n > 1e-8:
+                norm_emb = norm_emb / n
+            self.feature_bank = [norm_emb]
 
     def center(self) -> Tuple[float, float]:
         x1, y1, x2, y2 = self.bbox
@@ -83,8 +92,6 @@ class EmbeddingDatabase:
         with self._lock:
             for rec in self._records.values():
                 if rec.tracker_id == tracker_id and rec.camera_id == camera_id:
-                    # Never attach a detection to an identity of a different
-                    # class (a car must not inherit a Person_xxx id).
                     if obj_class is not None and rec.obj_class != obj_class:
                         continue
                     return rec
@@ -97,20 +104,23 @@ class EmbeddingDatabase:
             return [r for r in self._records.values() if r.camera_id == camera_id]
 
     def gallery_arrays(self, camera_id: Optional[str] = None, obj_class: Optional[str] = None) -> Tuple[List[str], np.ndarray]:
-        """Returns (global_ids, embeddings[N, D]) for similarity search.
-
-        If obj_class is given, only identities of the same class are
-        searched, so a vehicle can never be re-identified as a person
-        (and vice versa).
-        """
+        """Returns (global_ids, embeddings[N, D]) for multi-feature similarity search."""
         with self._lock:
             records = self.all_records(camera_id)
             if obj_class is not None:
                 records = [r for r in records if r.obj_class == obj_class]
-            ids = [r.global_id for r in records]
+            
+            ids = []
+            embs_list = []
+            for r in records:
+                bank = r.feature_bank if r.feature_bank else [r.embedding]
+                for emb in bank:
+                    ids.append(r.global_id)
+                    embs_list.append(emb)
+            
             if not ids:
                 return [], np.zeros((0, 0), dtype=np.float32)
-            embs = np.stack([r.embedding for r in records]).astype(np.float32)
+            embs = np.stack(embs_list).astype(np.float32)
             return ids, embs
 
     # ------------------------------------------------------------------ #
@@ -126,22 +136,34 @@ class EmbeddingDatabase:
         timestamp: Optional[float] = None,
         ema_alpha: float = 0.2,
     ) -> PersonRecord:
-        """
-        new_embedding_stored = (1 - ema_alpha) * old + ema_alpha * new
-        """
         ts = timestamp if timestamp is not None else time.time()
         with self._lock:
             rec = self._records.get(global_id)
             if rec is None:
                 raise KeyError(f"Unknown global_id: {global_id}")
 
-            old = rec.embedding
-            blended = (1.0 - ema_alpha) * old + ema_alpha * np.asarray(new_embedding, dtype=np.float32)
-            norm = np.linalg.norm(blended)
+            new_emb = np.asarray(new_embedding, dtype=np.float32)
+            norm = np.linalg.norm(new_emb)
             if norm > 1e-8:
-                blended = blended / norm
+                new_emb = new_emb / norm
+
+            old = rec.embedding
+            blended = (1.0 - ema_alpha) * old + ema_alpha * new_emb
+            norm_b = np.linalg.norm(blended)
+            if norm_b > 1e-8:
+                blended = blended / norm_b
 
             rec.embedding = blended.astype(np.float32)
+
+            # Store diverse feature keyframes in the feature bank (max 10)
+            if not rec.feature_bank:
+                rec.feature_bank = [blended.astype(np.float32)]
+            else:
+                sims = [float(np.dot(new_emb, f)) for f in rec.feature_bank]
+                max_sim = max(sims) if sims else 0.0
+                if max_sim < 0.88 and len(rec.feature_bank) < 10:
+                    rec.feature_bank.append(new_emb.astype(np.float32))
+
             rec.tracker_id = tracker_id
             rec.bbox = bbox
             rec.confidence = confidence

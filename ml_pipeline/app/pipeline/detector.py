@@ -52,12 +52,16 @@ class PersonDetector:
             List of tracked detections.
         """
 
+        import torch
+        device = 0 if torch.cuda.is_available() else "cpu"
+        
         results = self.model.track(
             source=frame,
             persist=True,
             tracker=self.tracker,
             conf=self.confidence,
-            verbose=True
+            device=device,
+            verbose=False
         )
 
         detections = []
@@ -81,7 +85,8 @@ class PersonDetector:
                     continue
 
                 class_id = int(box.cls.item())
-                raw_class = self.model.name.get(class_id,f"class_{class_id}")
+                names_dict = getattr(self.model, "names", getattr(result, "names", {}))
+                raw_class = names_dict.get(class_id, f"class_{class_id}") if isinstance(names_dict, dict) else f"class_{class_id}"
 
                 detections.append(
                     {

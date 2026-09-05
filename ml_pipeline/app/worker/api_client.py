@@ -4,16 +4,23 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+import os
+
 # --------------------------------------------------------
-# Server Configuration
+# Server Configuration (Load from .env / environment variables)
 # --------------------------------------------------------
 
-TEST_BASE_URL = "http://114.143.215.196:5005/AeroMegh/idms"
-PROD_BASE_URL = "https://idmsapi.aerogcs.com/AeroMegh/idms"
+TEST_BASE_URL = os.getenv("TEST_BASE_URL", "http://114.143.215.196:5005/AeroMegh/idms")
+PROD_BASE_URL = os.getenv("PROD_BASE_URL", "https://idmsapi.aerogcs.com/AeroMegh/idms")
+
+# Sub-Endpoint Relative Paths (Configurable via .env)
+DETECTION_PENDING_PATH = os.getenv("DETECTION_PENDING_PATH", "/detection/pending")
+DETECTION_UPDATE_PATH = os.getenv("DETECTION_UPDATE_PATH", "/detection/update")
+MODELS_ACTIVE_PATH = os.getenv("MODELS_ACTIVE_PATH", "/models?is_active=true")
 
 # For backwards compatibility
 BASE_URL = TEST_BASE_URL
-PENDING_API = f"{BASE_URL}/detection/pending"
+PENDING_API = f"{BASE_URL}{DETECTION_PENDING_PATH}"
 
 # --------------------------------------------------------
 # Common Headers
@@ -29,7 +36,7 @@ HEADERS = {
 
 def fetch_active_model_url(base_url=PROD_BASE_URL):
     try:
-        url = f"{base_url}/models?is_active=true"
+        url = f"{base_url}{MODELS_ACTIVE_PATH}"
         response = requests.get(url, timeout=30)
         
         if response.status_code == 204 or not response.text.strip():
@@ -69,7 +76,7 @@ def fetch_active_model_url(base_url=PROD_BASE_URL):
 
 def fetch_pending_job(base_url=PROD_BASE_URL):
     try:
-        pending_api = f"{base_url}/detection/pending"
+        pending_api = f"{base_url}{DETECTION_PENDING_PATH}"
         response = requests.get(pending_api, timeout=30)
 
         print("=" * 60)
@@ -131,7 +138,7 @@ def fetch_pending_job(base_url=PROD_BASE_URL):
 
 def update_status(task_id, status, base_url=PROD_BASE_URL):
     try:
-        url = f"{base_url}/detection/update/{task_id}"
+        url = f"{base_url}{DETECTION_UPDATE_PATH}/{task_id}"
 
         response = requests.put(
             url,
@@ -158,7 +165,7 @@ def update_status(task_id, status, base_url=PROD_BASE_URL):
 
 def update_completed(task_id, results, files=None, file_sizes=None, base_url=PROD_BASE_URL):
     try:
-        url = f"{base_url}/detection/update/{task_id}"
+        url = f"{base_url}{DETECTION_UPDATE_PATH}/{task_id}"
 
         # First guarantee task status is updated to COMPLETED on server
         update_status(task_id, "COMPLETED", base_url=base_url)
@@ -227,7 +234,7 @@ def update_completed(task_id, results, files=None, file_sizes=None, base_url=PRO
 
 def update_failed(task_id, message="Processing Failed", base_url=PROD_BASE_URL):
     try:
-        url = f"{base_url}/detection/update/{task_id}"
+        url = f"{base_url}{DETECTION_UPDATE_PATH}/{task_id}"
 
         response = requests.put(
             url,

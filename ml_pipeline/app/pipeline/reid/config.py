@@ -15,7 +15,7 @@ class ReIDConfig:
     # ---------------- Model ----------------
     model_name: str = "osnet_ain_x1_0"
     # Path to a local .pth checkpoint.
-    weights_path: str = "weights/osnet_ain_x1_0_msmt17.pth"
+    weights_path: str = "models/osnet_ain_x1_0_imagenet.pth"
     embedding_dim: int = 512
     input_size: Tuple[int, int] = (256, 128)  # (height, width), OSNet default
 
@@ -24,7 +24,9 @@ class ReIDConfig:
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-    similarity_threshold: float = 0.22
+    # 0.28 with multi-embedding feature bank matching allows robust re-attachment
+    # across angle/pose changes while preventing false merges.
+    similarity_threshold: float = 0.28
     # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 
@@ -32,11 +34,11 @@ class ReIDConfig:
     # new_embedding = (1 - ema_alpha) * old_embedding + ema_alpha * current_embedding
     ema_alpha: float = 0.35
 
-    # ---------------- Spatio-temporal gating (optional, off by default) ----------------
+    # ---------------- Spatio-temporal gating ----------------
     use_spatiotemporal_gating: bool = False
-    max_time_gap_seconds: float = 12.0      # ignore candidates not seen recently
-    max_center_jump_px: float = 600.0       # relaxed spatial continuity constraint
-    max_bbox_area_ratio: float = 3.0        # ignore candidates with wildly different scale
+    max_time_gap_seconds: float = 30.0      # allow re-identification up to 30 seconds after disappearing
+    max_center_jump_px: float = 1200.0      # flexible spatial distance limit for moving targets
+    max_bbox_area_ratio: float = 5.0        # flexible scale change ratio for perspective changes
 
     # ---------------- Identity bookkeeping ----------------
     id_prefix: str = "Person_"

@@ -1,5 +1,12 @@
 from pipeline.utils import format_time, get_cardinal_direction, resolve_severity, ensure_detailed_suggested_action, limit_text_words
 
+def safe_format_iso_time(iso_str, fallback_seconds):
+    if iso_str and "T" in str(iso_str):
+        try:
+            return str(iso_str).split("T")[1].split(".")[0][:8]
+        except Exception:
+            pass
+    return format_time(fallback_seconds)
 
 def build_result_json(persons):
     """
@@ -39,9 +46,9 @@ def build_result_json(persons):
 
                 "appearance_id": app["appearance_id"],
 
-                "entry_time": format_time(app["entry_time"]),
+                "entry_time": safe_format_iso_time(app.get("entry_detection_time"), app["entry_time"]),
 
-                "exit_time": format_time(app["exit_time"]),
+                "exit_time": safe_format_iso_time(app.get("exit_detection_time"), app["exit_time"]),
 
                 "duration": round(app["duration"], 2),
 
@@ -86,8 +93,10 @@ def build_result_json(persons):
 
         # Determine overall entry and exit time for this object from its appearances
         if person.get("appearances"):
-            obj_entry_time = format_time(person["appearances"][0]["entry_time"])
-            obj_exit_time = format_time(person["appearances"][-1]["exit_time"])
+            first_app = person["appearances"][0]
+            last_app = person["appearances"][-1]
+            obj_entry_time = safe_format_iso_time(first_app.get("entry_detection_time"), first_app["entry_time"])
+            obj_exit_time = safe_format_iso_time(last_app.get("exit_detection_time"), last_app["exit_time"])
         else:
             obj_entry_time = format_time(person.get("current_entry", 0))
             obj_exit_time = format_time(person.get("last_seen", 0))

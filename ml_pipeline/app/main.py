@@ -29,7 +29,11 @@ screenshot_manager = ScreenshotManager(output_folder=output_folder)
 # Paths
 # -------------------------------------------------------
 DEFAULT_MODEL = os.path.join(BASE_DIR, "downloaded_model", "best.pt")
-MODEL_PATH = DEFAULT_MODEL if os.path.exists(DEFAULT_MODEL) else os.path.join(BASE_DIR, "models", "best.pt")
+if os.path.exists(DEFAULT_MODEL):
+    MODEL_PATH = DEFAULT_MODEL
+else:
+    print(f"Model URL is not present and downloaded model is missing at: {DEFAULT_MODEL}")
+    MODEL_PATH = DEFAULT_MODEL
 VIDEO_PATH = os.path.join(BASE_DIR, "1.mp4")
 
 # -------------------------------------------------------

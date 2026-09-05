@@ -2,13 +2,13 @@
 
 # 🎯 `person-detection-reid-pipeline`
 
-### **Autonomous Aerial Person Detection, Deep Re-Identification, Telemetry Fusion & VLM Threat Assessment Engine**
+### **Autonomous Aerial Target Detection, OSNet AIN Multi-Feature Re-Identification, Telemetry Fusion & VLM Threat Assessment Engine**
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-Deep%20Learning-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![YOLOv8](https://img.shields.io/badge/YOLO-Custom%20Trained-00FFFF?style=for-the-badge&logo=ultralytics&logoColor=black)](https://ultralytics.com)
-[![OSNet](https://img.shields.io/badge/ReID-OSNet%20Deep%20Embeddings-00E676?style=for-the-badge)](https://github.com/KaiyangZhou/deep-person-reid)
-[![LLaVA VLM](https://img.shields.io/badge/VLM-Ollama%20LLaVA%20Threat%20Engine-FF6F00?style=for-the-badge)](https://ollama.ai/)
+[![OSNet AIN](https://img.shields.io/badge/ReID-OSNet%20AIN%20Feature%20Bank-00E676?style=for-the-badge)](https://github.com/KaiyangZhou/deep-person-reid)
+[![Ollama VLM](https://img.shields.io/badge/VLM-Qwen2.5--VL%20%2F%20LLaVA-FF6F00?style=for-the-badge)](https://ollama.ai/)
 [![Azure](https://img.shields.io/badge/Azure-Blob%20Storage-0089D6?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://azure.microsoft.com/)
 
 ---
@@ -28,31 +28,32 @@
 
 <br/>
 
-## ⚡ Key Highlights & Capabilities
+## ⚡ Key Highlights & System Capabilities
 
-- 🎯 **Custom-Trained YOLO Detector**: Fine-tuned for small-object aerial and drone surveillance person detection (`class_id = 0`).
-- 🔄 **ByteTrack Short-Term Association**: Handles frame-to-frame spatial continuity and short-term occlusions.
-- 🧬 **OSNet Deep Feature Re-ID**: Computes 512-dimensional L2-normalized embeddings to re-identify individuals across long absences and re-entries (`similarity_threshold = 0.68`).
-- 🤖 **Vision-Language Model (VLM) Threat Engine**: Integrates local Ollama (`llava:latest`) for visual keyframe threat assessment, returning detailed target descriptions, visual class verification, and tactical actions.
-- 🛡️ **Guaranteed Non-Null Severity**: Dual-pass severity resolution (`resolve_severity()`) ensures target threat level (`1` to `4`) and severity labels (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) are **100% non-null**, falling back gracefully to ReID frequency and duration metrics if VLM visual data is missing.
-- 🎖️ **Rich Tactical Suggested Actions**: Automated post-processor (`ensure_detailed_suggested_action()`) expands single-word responses into complete, detailed Army-Chief style field directives.
-- 🛰️ **GPS Telemetry Fusion**: Interpolates drone flight logs (`offline_teledata_` & `offline_flightdata_`) to tag real-world latitude, longitude, relative altitude, cardinal direction, and ISO timestamps.
-- ☁️ **Azure Blob Storage Uploads**: Automatically uploads crop evidence snapshots (`best_detection.jpg`) using BlockBlob SAS authorization.
-- ⚙️ **Autonomous Background Worker**: Polling engine (`worker.py`) that queries backend API endpoints, processes detection jobs, and pushes structured completion callbacks.
+- 🎯 **Custom-Trained YOLO Detector & Dynamic Classes**: Fine-tuned for small-object aerial/drone surveillance person, vehicle, and drone detection (`Person_001`, `Vehicle_001`, `Drone_001`, etc.).
+- 🔄 **ByteTrack Short-Term Association**: Handles frame-to-frame spatial continuity and short-term occlusions across video streams.
+- 🧬 **OSNet AIN Deep Feature Re-ID (Adaptive Instance Normalization)**: Uses `osnet_ain_x1_0` to filter out lighting, pose, shadow, and motion blur variations.
+- 🏛️ **Multi-Embedding Feature Bank Gallery Engine**: Stores up to 10 diverse pose/angle keyframe embeddings per target, eliminating duplicate ID generation when targets turn around or re-appear.
+- 🤖 **Vision-Language Model (VLM) Threat Engine**: Integrates local Ollama (`qwen2.5vl:3b` / `llava`) with model weights stored inside `ml_pipeline/app/vlm_models/`.
+- 🛡️ **Guaranteed Non-Null Severity**: Dual-pass severity resolution (`resolve_severity()`) ensures target threat level (`1` to `4`) and severity labels (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) are **100% non-null**.
+- 🎖️ **Rich Tactical Directives**: Post-processor (`ensure_detailed_suggested_action()`) expands VLM responses into complete, detailed field directives.
+- 🛰️ **GPS Telemetry Fusion**: Interpolates drone flight logs (`offline_teledata_` & `offline_flightdata_`) to tag real-world latitude, longitude, altitude, cardinal direction, and ISO timestamps.
+- 🧹 **Automatic Disk Space Cleanup**: Downloaded videos, telemetry CSVs, and local output directories are **automatically deleted** after uploading evidence to Azure and sending completion callbacks.
+- ⚙️ **Automatic Multi-Server Job Polling**: Single unified worker pool (`app.py`) continuously monitors and pulls pending jobs from **both** Test Server and Production Server queues.
 
 <br/>
 
-## 🏗️ System Architecture & Data Flow
+## 🏗️ End-to-End Pipeline Architecture
 
 ```gantt
 +---------------------------------------------------------------------------------------------------+
 |                                 END-TO-END PIPELINE ARCHITECTURE                                  |
 +---------------------------------------------------------------------------------------------------+
 
- [Pending Task Polling] ──► [Download Media & CSV] ──► [Frame Decimation Engine (10 FPS)]
-                                                                  │
-                                                                  ▼
- [Azure Blob Snapshot Upload] ◄── [OSNet Re-ID (0.68 Sim)] ◄── [Custom YOLO + ByteTrack]
+ [Auto Multi-Server Polling] ──► [Download Media & CSV] ──► [Frame Decimation Engine (10 FPS)]
+                                                                    │
+                                                                    ▼
+ [Disk & Temp Directory Cleanup] ◄── [OSNet AIN Feature Bank] ◄── [Custom YOLO + ByteTrack]
             │
             ▼
  [VLM Keyframe Analysis] ──► [Non-Null Severity & Action] ──► [Telemetry GPS Fusion] ──► [API Callbacks]
@@ -64,15 +65,16 @@
 
 ```text
 person-detection-reid-pipeline/ml_pipeline/app
-├── app.py                      # Production Worker Service & Management Entry Point
+├── app.py                      # Production & Multi-Server Worker Service Entry Point
 ├── downloader.py               # Media & Telemetry File Downloader
-├── models/                     # Deep Learning Checkpoint Storage
+├── models/                     # Deep Learning Model Checkpoints
 │   ├── best.pt                 # Custom-Trained YOLO Weights
-│   └── osnet_x1_0_market_...pth# OSNet Re-ID Model Weights
+│   └── osnet_ain_x1_0_...pth   # OSNet AIN ReID Checkpoint Weights
+├── vlm_models/                 # Local Ollama VLM Model Blobs (Qwen2.5-VL / LLaVA)
 ├── worker/                     # Autonomous Service Layer
 │   ├── api_client.py           # Backend Server REST API Client
 │   ├── result_builder.py       # API Schema Parser & JSON Payload Builder
-│   └── worker.py               # Background Task Polling Loop, VLM Engine & Azure Uploader
+│   └── worker.py               # Multi-Server Auto Poller, VLM Engine, Azure Uploader & Cleanup
 └── pipeline/                   # Core Computer Vision Engine
     ├── video_processor.py      # Main Pipeline Orchestrator & Decimation Engine
     ├── detector.py             # Custom YOLO Detector & ByteTrack Integration
@@ -81,47 +83,32 @@ person-detection-reid-pipeline/ml_pipeline/app
     ├── vlm_verifier.py         # Keyframe Visual Class & Threat Verification
     ├── telemetry.py            # Drone GPS Log Interpolation Engine
     ├── screenshot_manager.py   # Crop Quality Selection & Keyframe Exporter
-    ├── json_writer.py          # Local Output Analytics & Metadata Writer
+    ├── json_writer.py          # Output Analytics & Metadata Writer
     ├── utils.py                # Severity Resolution & Action Formatting Helpers
     └── reid/                   # OSNet Deep Re-Identification Subsystem
-        ├── config.py           # Re-ID Subsystem Settings (Threshold = 0.68)
+        ├── config.py           # Re-ID Settings (similarity_threshold = 0.28)
         ├── identity_manager.py # Gallery Cosine Matching & Search
-        ├── embedding_database.py# Thread-Safe Embedding Memory Database
-        └── reid_model.py       # Batched PyTorch OSNet Feature Extractor
+        ├── embedding_database.py# Thread-Safe Embedding Feature Bank Database
+        └── reid_model.py       # Batched PyTorch OSNet AIN Feature Extractor
 ```
 
 <br/>
 
-## 📋 File-by-File Responsibility Matrix
+## ⚙️ Key System Configuration
 
-| File Path | Module Category | Technical Functionality |
-| :--- | :--- | :--- |
-| 🛠️ `app/worker/worker.py` | **Background Worker & VLM** | Autonomous polling event loop, VLM LLaVA prompt execution, weapon escalation guardrails, Azure Blob snapshot uploads, and completion callbacks. |
-| 📡 `app/worker/api_client.py` | **REST API Client** | Handles `GET /detection/pending` queries and status update callbacks to backend servers. |
-| 🏗️ `app/worker/result_builder.py` | **API Result Builder** | Converts tracking and VLM analytics into production JSON payloads with non-null severities. |
-| 🎬 `app/pipeline/video_processor.py` | **Pipeline Orchestrator** | Manages frame decimation (10 FPS), YOLO detection, ByteTrack tracking, Re-ID extraction, keyframe sampling, and VLM assessment. |
-| 🔍 `app/pipeline/detector.py` | **Detector & Tracker** | Loads custom YOLO weights (`best.pt`) for person detection (`class_id=0`) and executes ByteTrack multi-object tracking. |
-| 🧠 `app/pipeline/identity_manager.py` | **Re-ID Core Engine** | Fast-path lookup, gallery cosine similarity search, embedding updates, and stable Person ID assignment. |
-| 👁️ `app/pipeline/vlm_verifier.py` | **VLM Verifier** | Performs multi-crop visual class verification using Ollama LLaVA VLM. |
-| 🛠️ `app/pipeline/utils.py` | **Pipeline Utilities** | Implements `resolve_severity()` (non-null fallback engine) and `ensure_detailed_suggested_action()` (tactical action expansion). |
-| 🌐 `app/pipeline/telemetry.py` | **GPS Fusion Engine** | Parses drone CSV logs (`offline_teledata_`, `offline_flightdata_`) and interpolates real-world GPS coordinates per frame. |
-
-<br/>
-
-## ⚙️ Hyperparameters & Configuration
-
-| Parameter | Value / Setting | Technical Description |
+| Parameter | Setting / Value | Technical Description |
 | :--- | :--- | :--- |
 | **Detection Model** | Custom-Trained YOLO (`best.pt`) | Fine-tuned object detection weights for aerial imagery |
-| **Detection Confidence** | `0.50` | Threshold required for person detection validation |
+| **Detection Confidence** | `0.25` (with auto-fallback) | Threshold required for object detection validation |
 | **Tracking Engine** | ByteTrack (`bytetrack.yaml`) | Frame-to-frame spatial multi-object tracker |
-| **Re-ID Feature Model** | OSNet (`osnet_x1_0`) | Deep convolutional feature extractor |
-| **Embedding Dimension** | `512` Float32 Values | L2-normalized feature representation vector |
-| **Cosine Similarity Cutoff** | `0.68` | Minimum similarity score required for identity re-entry match |
-| **VLM Engine** | Ollama LLaVA (`llava:latest`) | Vision-Language model for visual threat assessment & action recommendation |
-| **VLM Temperature** | `0.2` | Low temperature setting for deterministic, non-creative threat evaluation |
+| **Re-ID Model** | OSNet AIN (`osnet_ain_x1_0`) | Adaptive Instance Normalization feature extractor |
+| **Re-ID Weights Path** | `models/osnet_ain_x1_0_imagenet.pth` | Self-contained local checkpoint file |
+| **Gallery Feature Bank** | Up to 10 pose embeddings / target | Multi-feature storage per target for angle-robust ReID |
+| **Cosine Similarity Cutoff**| `0.28` | Multi-embedding gallery cutoff score |
+| **VLM Model Engine** | Ollama (`qwen2.5vl:3b` / `llava`) | Local Vision-Language model for visual threat assessment |
+| **VLM Storage Path** | `ml_pipeline/app/vlm_models/` | Self-contained local VLM model blobs directory |
 | **Severity Mapping** | Levels 1 (LOW) to 4 (CRITICAL) | Non-null threat assessment resolved via VLM + ReID/duration fallback |
-| **Identity TTL** | `None` (Disabled) | Preserves person gallery identities across full video length |
+| **Disk Cleanup** | Automated `finally` block cleanup | Deletes downloaded `.mp4`, `.csv`, and output folders post-job |
 
 <br/>
 
@@ -140,8 +127,8 @@ person-detection-reid-pipeline/ml_pipeline/app
       "reidentification_count": 2,
       "severity_level": 3,
       "severity": "HIGH",
-      "description": "Individual in dark jacket observed loitering near perimeter fence.",
-      "suggest_action": "ALERT — Raise force readiness level and notify perimeter security units regarding Target Person_001.",
+      "description": "Individual in dark jacket walking along path near water edge.",
+      "suggest_action": "MONITOR — Keep close watch on target person movements and behavior.",
       "evidence": {
         "file_name": "Person_001_detection.jpg",
         "file_size": 245120,
@@ -171,21 +158,21 @@ person-detection-reid-pipeline/ml_pipeline/app
 
 ### 1. Install Dependencies
 ```bash
-pip install -r requriment.txt
-pip install azure-storage-blob requests opencv-python Pillow
+pip install -r requirement.txt
 ```
 
 ### 2. Start Local Ollama VLM Service
-Ensure Ollama is installed and running locally with the LLaVA model:
+Ensure Ollama is running locally pointing to your local `vlm_models` folder:
 ```bash
-ollama run llava:latest
+export OLLAMA_MODELS="$(pwd)/ml_pipeline/app/vlm_models"
+ollama serve
 ```
 
-### 3. Launch Pipeline Server / Worker
+### 3. Launch Automatic Multi-Server Pipeline Worker
 ```bash
 python ml_pipeline/app/app.py
 ```
-Runs the production background worker service polling for pending jobs across Test and Production servers.
+Starts the production background worker service, polling automatically across Test and Production servers.
 
 ---
 

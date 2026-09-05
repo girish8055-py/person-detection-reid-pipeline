@@ -13,6 +13,10 @@ def download_file(url, filename):
     os.makedirs(dest_dir, exist_ok=True)
     dest_path = os.path.join(dest_dir, filename)
 
+    if os.path.exists(dest_path) and os.path.getsize(dest_path) > 0:
+        print(f"File already exists locally, skipping download: {dest_path}")
+        return dest_path
+
     try:
         response = requests.get(url, stream=True, timeout=60)
         response.raise_for_status()

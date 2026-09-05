@@ -195,6 +195,17 @@ class VideoProcessor:
             current_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
 
             if frame_count % skip_interval == 0:
+                
+                # Enforce real-world flight data boundaries if telemetry exists
+                if telemetry_reader is not None and getattr(telemetry_reader, 'samples', None):
+                    rw_ts = telemetry_reader.video_start_epoch + current_time
+                    flight_start_ts = telemetry_reader.samples[0][0]
+                    flight_end_ts = telemetry_reader.samples[-1][0]
+                    
+                    # Skip frames before the flight data starts or after it ends
+                    if rw_ts < flight_start_ts or rw_ts > flight_end_ts:
+                        continue
+
                 detections = self.detector.detect(frame)
 
                 if len(detections) > 0:
@@ -238,7 +249,17 @@ class VideoProcessor:
                         f"Track #{det['track_id']} ({det.get('person_id', 'N/A')}): class='{det.get('class', 'person')}' (conf={det['confidence']:.2f})"
                         for det in detections
                     ]
-                    print(f"[DETECTION] Frame {frame_count} @ {current_time:.2f}s | {len(detections)} detection(s): {', '.join(det_info)}")
+                    time_str = f"{current_time:.2f}s"
+                    if telemetry_reader is not None and getattr(telemetry_reader, 'video_start_epoch', None) is not None:
+                        from datetime import datetime, timezone
+                        try:
+                            rw_ts = telemetry_reader.video_start_epoch + current_time
+                            rw_time_str = datetime.fromtimestamp(rw_ts, tz=timezone.utc).strftime('%H:%M:%S')
+                            time_str = f"{rw_time_str} ({current_time:.2f}s)"
+                        except Exception:
+                            pass
+
+                    print(f"[DETECTION] Frame {frame_count} @ {time_str} | {len(detections)} detection(s): {', '.join(det_info)}")
 
                     for det in detections:
                         screenshot_manager.save_best_detection(frame, det["person_id"], det)
@@ -272,7 +293,14 @@ class VideoProcessor:
         final_time = frame_count / video_fps if video_fps > 0 else time.time()
         person_manager.finalize(final_time)
 
-        persons = person_manager.get_persons()
+        all_persons = person_manager.get_persons()
+        
+        # Speed optimization: filter out noisy/transient tracks that last < 1.5 seconds.
+        # This prevents opening the video to extract clips/keyframes 100+ times for glitch detections.
+        persons = {
+            p_id: p_data for p_id, p_data in all_persons.items() 
+            if p_data.get("total_duration", 0) >= 1.5
+        }
 
         # Extract entry and exit keyframes (and behavior clip) for each detected person
         for p_id, p_data in persons.items():

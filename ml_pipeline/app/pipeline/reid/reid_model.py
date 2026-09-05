@@ -24,32 +24,25 @@ _OFFICIAL_OSNET_X1_0_URL = os.path.join(
 )
 
 
-def _build_osnet_x1_0(num_classes: int = 1000):
+def _build_reid_model(model_name: str = "osnet_ain_x1_0", num_classes: int = 1000):
     """
-    Try to build the official OSNet_x1_0 architecture from torchreid's
-    model-definition submodule only (no dataset/engine imports triggered).
-    Falls back to a bundled architecturally-identical implementation.
+    Build OSNet AIN (osnet_ain_x1_0) or OSNet IBN (osnet_ibn_x1_0) model
+    from torchreid with official pretrained weights.
     """
-    # Newer torchreid (KaiyangZhou/deep-person-reid, "torchreid" >= 1.4 layout)
     try:
-        from torchreid.reid.models.osnet import osnet_x1_0  # type: ignore
-        return osnet_x1_0(num_classes=num_classes, pretrained=False, loss="softmax")
-    except Exception:
-        pass
+        import torchreid
+        model = torchreid.models.build_model(
+            name=model_name,
+            num_classes=num_classes,
+            pretrained=True,
+            loss="softmax"
+        )
+        logger.info("Successfully initialized pretrained %s architecture via torchreid.", model_name)
+        return model
+    except Exception as exc:
+        logger.warning("Could not build %s via torchreid: %s. Falling back to default OSNet_x1_0.", model_name, exc)
 
-    # Older/alternate layout
-    try:
-        from torchreid.models.osnet import osnet_x1_0  # type: ignore
-        return osnet_x1_0(num_classes=num_classes, pretrained=False, loss="softmax")
-    except Exception:
-        pass
-
-    # Fallback: bundled, dependency-free re-implementation.
-    logger.warning(
-        "torchreid not importable; using bundled OSNet_x1_0 fallback. "
-        "Install torchreid for the exact reference implementation: "
-        "`pip install torchreid --no-deps`"
-    )
+    # Fallback to osnet_x1_0
     from .osnet_fallback import osnet_x1_0 as fallback_osnet_x1_0
     return fallback_osnet_x1_0(num_classes=num_classes)
 
@@ -70,8 +63,9 @@ class OSNetReIDExtractor:
         self.cfg = config or DEFAULT_CONFIG
         self.device = torch.device(self.cfg.device)
 
-        self.model = _build_osnet_x1_0()
-        self._load_weights(self.cfg.weights_path)
+        self.model = _build_reid_model(model_name=self.cfg.model_name)
+        if self.cfg.weights_path and os.path.isfile(self.cfg.weights_path):
+            self._load_weights(self.cfg.weights_path)
 
         self.model.eval()
         self.model.to(self.device)

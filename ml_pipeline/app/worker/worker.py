@@ -18,6 +18,11 @@ from PIL import Image
 if _app_dir not in sys.path:
     sys.path.insert(0, _app_dir)
 
+# Set OLLAMA_MODELS to point directly to local vlm_models folder inside the project
+_vlm_models_path = os.path.join(_app_dir, "vlm_models")
+if os.path.exists(_vlm_models_path):
+    os.environ["OLLAMA_MODELS"] = _vlm_models_path
+
 from downloader import download_video, download_file, download_model
 from pipeline.telemetry import parse_video_start_epoch
 from pipeline.utils import get_severity_from_label, resolve_severity, ensure_detailed_suggested_action, limit_text_words
@@ -112,7 +117,7 @@ def get_vlm_behavior_description_and_action(person_result, keyframe_paths):
     a local VLM (llava) via Ollama, requesting a visual summary, recommended
     action and a severity assessment based on the visual analysis.
     """
-    ollama_url = "http://localhost:11434/api/generate"
+    ollama_url = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
     
     images_b64 = []
     max_frames = 3
@@ -175,7 +180,7 @@ RESPOND IN VALID JSON ONLY:
 """
 
     payload = {
-        "model": "llava:latest",
+        "model": "qwen2.5vl:3b",
         "prompt": prompt,
         "images": images_b64,
         "stream": False,
@@ -338,32 +343,48 @@ def upload_to_azure(file_path, filename, flight_id="default", sas_url=None, base
         return fallback_url
 
 
-def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_URL):
+SERVERS_CONFIG = [
+    ("Test Server", TEST_BASE_URL),
+    ("Production Server", PROD_BASE_URL),
+]
 
-    logger.info("[%s] Worker Started", server_name)
+
+def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
+    logger.info("[%s] Automatic Multi-Server Pipeline Worker Started", server_name)
 
     while True:
         task_id = None
-        try:
+        video_path = None
+        csv_path = None
+        flightdata_path = None
+        active_server_name = None
+        active_base_url = None
 
-            # Only one job at a time
+        try:
             if app_module.processing_lock.locked():
                 time.sleep(5)
                 continue
 
-            job = fetch_pending_job(base_url=base_url)
+            # Auto-poll: check all configured servers for an available pending job
+            job = None
+            for s_name, s_url in SERVERS_CONFIG:
+                job = fetch_pending_job(base_url=s_url)
+                if job is not None:
+                    active_server_name = s_name
+                    active_base_url = s_url
+                    break
 
             if job is None:
-                logger.info("[%s] No Pending Jobs", server_name)
                 time.sleep(5)
                 continue
 
+            server_name = active_server_name
+            base_url = active_base_url
             task_id = job["task_id"]
-
             flight_id = job["flight_id"]
 
             logger.info(
-                "[%s] Processing Task : %s",
+                "[%s] Auto-pulled pending job from server: Task ID = %s",
                 server_name,
                 task_id
             )
@@ -474,17 +495,18 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                     raise RuntimeError(err_msg)
             else:
                 default_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                finetuned_model = os.path.join(default_dir, "downloaded_model", "best.pt")
-                default_local_model = finetuned_model if os.path.exists(finetuned_model) else os.path.join(default_dir, "models", "best.pt")
-                if os.path.exists(default_local_model):
+                downloaded_model_path = os.path.join(default_dir, "downloaded_model", "best.pt")
+                if os.path.exists(downloaded_model_path):
                     logger.info(
-                        "[%s] No custom model URL in task. Using base model: %s",
-                        server_name, default_local_model
+                        "[%s] No custom model URL in task. Using downloaded model: %s",
+                        server_name, downloaded_model_path
                     )
-                    model_path = default_local_model
+                    model_path = downloaded_model_path
                 else:
+                    msg = f"[{server_name}] Model URL is not present and downloaded model ({downloaded_model_path}) is missing."
+                    print(msg)
                     logger.warning(
-                        "[%s] Task %s has no model URL and base model 'models/best.pt' is missing. "
+                        "[%s] Task %s has no model URL and downloaded model 'downloaded_model/best.pt' is missing. "
                         "Resetting task back to PENDING for retry.",
                         server_name, task_id
                     )
@@ -710,6 +732,9 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                     base_url=base_url
                 )
                 logger.info("[%s] Task %s Completed and sent to admin.", server_name, task_id)
+            # -----------------------------
+            # Cleanup: Delete downloaded video, CSV files, and local output folder after processing.
+            # -----------------------------
             finally:
                 for f in files_to_upload.values():
                     try:
@@ -717,17 +742,30 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
                     except Exception:
                         pass
 
-            # -----------------------------
-            # Cleanup: Delete video and CSV files after detection.
-            # To KEEP downloaded files, comment out this loop.
-            # -----------------------------
-            '''for path in (video_path, csv_path, flightdata_path):
-                if path and os.path.exists(path):
+                for path in (video_path, csv_path, flightdata_path):
+                    if path and os.path.exists(path):
+                        try:
+                            os.remove(path)
+                            logger.info("[%s] Deleted temporary downloaded file: %s", server_name, path)
+                        except Exception as clean_err:
+                            logger.warning("[%s] Could not delete temporary file %s: %s", server_name, path, clean_err)
+
+                # Delete local job output directory (keyframes, annotated video, local crops)
+                if output_folder and os.path.exists(output_folder):
                     try:
-                        os.remove(path)
-                        logger.info("Deleted temporary download file: %s", path)
-                    except Exception as clean_err:
-                        logger.warning("Could not delete %s: %s", path, clean_err)'''
+                        shutil.rmtree(output_folder)
+                        logger.info("[%s] Cleaned up local job output directory: %s", server_name, output_folder)
+                    except Exception as clean_out_err:
+                        logger.warning("[%s] Could not delete local output directory %s: %s", server_name, output_folder, clean_out_err)
+
+                # Remove temporary local debug JSON if created
+                app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                app_debug_file = os.path.join(app_dir, "admin_output_debug.json")
+                if os.path.exists(app_debug_file):
+                    try:
+                        os.remove(app_debug_file)
+                    except Exception:
+                        pass
 
         except Exception as e:
 
@@ -747,21 +785,10 @@ def worker_loop(app_module, server_name="Production Server", base_url=PROD_BASE_
 
 
 def start_worker(app_module):
-
-    # Start Test Server background worker
-    test_thread = threading.Thread(
+    worker_thread = threading.Thread(
         target=worker_loop,
-        args=(app_module, "Test Server", TEST_BASE_URL),
+        args=(app_module, "Auto Server Queue"),
         daemon=True
     )
-    test_thread.start()
-    logger.info("Background Worker for Test Server Started")
-
-    # Start Production Server background worker
-    prod_thread = threading.Thread(
-        target=worker_loop,
-        args=(app_module, "Production Server", PROD_BASE_URL),
-        daemon=True
-    )
-    prod_thread.start()
-    logger.info("Background Worker for Production Server Started")
+    worker_thread.start()
+    logger.info("Automatic Multi-Server Pipeline Worker Started (Polling Test & Production Servers)")
