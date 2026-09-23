@@ -44,6 +44,15 @@ class PersonDetector:
         self.min_box_height = min_box_height
         self.min_box_area = min_box_area
 
+    def get_model_classes(self):
+        """Returns the list of normalized class names supported by the loaded YOLO model."""
+        names_dict = getattr(self.model, "names", {})
+        if isinstance(names_dict, dict):
+            return [normalize_class(v) for v in names_dict.values()]
+        elif isinstance(names_dict, (list, tuple)):
+            return [normalize_class(v) for v in names_dict]
+        return []
+
     def detect(self, frame):
         """
         Detect and track people in a frame.

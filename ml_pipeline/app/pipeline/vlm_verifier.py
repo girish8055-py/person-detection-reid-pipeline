@@ -39,20 +39,11 @@ def verify_object_class(
     keyframe_paths: List[str],
     target_id: str,
     fallback_class: str = "person",
+    allowed_classes: Optional[List[str]] = None,
 ) -> str:
     """
     Ask the VLM to look at one or more keyframes of a tracked object and
-    decide whether it is a **person** or a **vehicle**.
-
-    Args:
-        keyframe_paths: list of absolute paths to keyframe JPGs (entry,
-            middle, exit).  At least one must exist.
-        target_id: human-readable ID used only for logging.
-        fallback_class: returned when every image fails to load or the VLM
-            is unreachable.
-
-    Returns:
-        ``"person"`` or ``"vehicle"``
+    decide its class, strictly constrained to the model's supported classes.
     """
     images_b64: List[str] = []
     for kp in keyframe_paths:
@@ -68,21 +59,31 @@ def verify_object_class(
         )
         return fallback_class
 
+    clean_fallback = str(fallback_class).lower().strip() if fallback_class else "person"
+
+    # Build exact allowed set from model classes or default
+    if allowed_classes:
+        valid_set = set(str(c).lower().strip() for c in allowed_classes)
+    else:
+        valid_set = {"person", "vehicle", "drone"}
+
+    if clean_fallback:
+        valid_set.add(clean_fallback)
+
+    valid_list_str = ", ".join([f'"{c}"' for c in sorted(valid_set)])
+
     prompt = (
-        "You are an aerial drone surveillance image classifier and verifier.\n"
+        "You are an aerial surveillance image classifier and verifier.\n"
         "Look closely at the keyframe image(s) below showing a detected subject from an aerial video.\n\n"
         "YOUR CRITICAL MISSION:\n"
-        "Verify whether the object is ACTUALLY a person or a vehicle.\n"
-        "YOLO object detectors frequently misclassify objects (e.g. detecting a vehicle/car/truck as a person, or detecting a person as a vehicle).\n"
-        "You must examine the visual shape and features to correct any false detection:\n"
-        '  - "person": human being, walking, standing, sitting, soldier, infantryman, head/shoulders from above.\n'
-        '  - "vehicle": car, truck, van, bus, motorcycle, bicycle, tractor, tank, or any wheeled/motorized machinery.\n\n'
+        f"Verify the visual classification of the object (detector labeled it as '{clean_fallback}').\n"
+        f"You MUST classify the object into EXACTLY ONE of the model's supported classes: [{valid_list_str}].\n\n"
         "CRITICAL INSTRUCTIONS:\n"
-        '  - If the detector labeled it as a person but visually it is a vehicle/car/truck, you MUST classify it as "vehicle".\n'
-        '  - If the detector labeled it as a vehicle but visually it is a person/human, you MUST classify it as "person".\n'
-        "  - Base your classification strictly on the true physical shape of the subject.\n\n"
+        "  - Examine the visual shape and features of the target object in the frame.\n"
+        "  - Base your classification strictly on the true physical shape of the subject.\n"
+        f"  - Do NOT invent outside classes. Your response MUST be one of: [{valid_list_str}].\n\n"
         "Respond with ONLY a JSON object:\n"
-        '{"classification": "person"} OR {"classification": "vehicle"}'
+        '{"classification": "<one_of_the_supported_classes>"}'
     )
 
     payload = {
@@ -104,17 +105,18 @@ def verify_object_class(
             parsed = {}
 
         cls = str(parsed.get("classification", "")).lower().strip()
-        if cls in ("person", "vehicle"):
-            if cls != fallback_class:
+
+        if cls in valid_set:
+            if cls != clean_fallback:
                 logger.info(
                     "[VLM VERIFY] Target %s: class corrected '%s' -> '%s'",
                     target_id,
-                    fallback_class,
+                    clean_fallback,
                     cls,
                 )
                 print(
                     f"[VLM VERIFY] Target {target_id}: "
-                    f"class corrected '{fallback_class}' -> '{cls}'"
+                    f"class corrected '{clean_fallback}' -> '{cls}'"
                 )
             else:
                 logger.info(
@@ -125,13 +127,13 @@ def verify_object_class(
             return cls
 
         logger.warning(
-            "[VLM VERIFY] Target %s: VLM returned unrecognised class %r, "
-            "keeping '%s'",
+            "[VLM VERIFY] Target %s: VLM returned unrecognised class %r (allowed: %s), keeping '%s'",
             target_id,
             cls,
-            fallback_class,
+            valid_list_str,
+            clean_fallback,
         )
-        return fallback_class
+        return clean_fallback
 
     except Exception as exc:
         logger.error(

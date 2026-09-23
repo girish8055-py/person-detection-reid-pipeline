@@ -113,9 +113,9 @@ class PersonManager:
                     person["entry_bbox"] = bbox
                     person["start_frame"] = frame_num
 
-                # Update class if vehicle is detected or if higher confidence
-                if detected_class == "vehicle" and person.get("class") != "vehicle":
-                    person["class"] = "vehicle"
+                # Update class if a specific object class (e.g. drone, vehicle) is detected over default person
+                if detected_class != "person" and person.get("class") == "person":
+                    person["class"] = detected_class
 
                 person["last_seen"] = current_time
 

@@ -32,9 +32,9 @@ class ScreenshotManager:
         lower = pid_str.lower()
         det_class = str(detection.get("class", "person")).strip().lower() if isinstance(detection, dict) else "person"
 
-        # Keep the ID's own class prefix (person_001 / vehicle_001); only
-        # fall back to class prefix for numeric-only ids.
-        folder_name = lower if lower.startswith(("person_", "vehicle_")) else f"{det_class}_{lower}"
+        # Keep the ID's own class prefix (e.g. Person_001, Vehicle_001, Drone_001); only
+        # fall back to adding class prefix for numeric-only ids.
+        folder_name = lower if "_" in lower else f"{det_class}_{lower}"
 
         person_folder = os.path.join(
             self.output_folder,
@@ -53,7 +53,7 @@ class ScreenshotManager:
             2
         )
 
-        if lower.startswith(("person", "vehicle")):
+        if "_" in lower:
             label = pid_str
         elif isinstance(detection, dict) and detection.get("class"):
             label = f"{det_class}_{pid_str}"

@@ -552,10 +552,10 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
             file_sizes = {}
             
             for pk, pval in persons.items():
-                # Keep the class-matched prefix (Person_001 / Vehicle_001)
+                # Keep the class-matched prefix (Person_001 / Vehicle_001 / Drone_001)
                 raw_id = str(pk)
                 det_cls = str(pval.get("class", "person")).strip().capitalize()
-                raw_person_id = raw_id if raw_id.lower().startswith(("person_", "vehicle_")) else f"{det_cls}_{raw_id}"
+                raw_person_id = raw_id if "_" in raw_id else f"{det_cls}_{raw_id}"
                 
                 # Format time of detection string
                 time_str = "unknown"

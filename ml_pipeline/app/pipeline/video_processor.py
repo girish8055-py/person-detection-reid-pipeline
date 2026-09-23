@@ -342,11 +342,24 @@ class VideoProcessor:
 
         from worker.worker import get_vlm_behavior_description_and_action
 
+        model_classes = self.detector.get_model_classes() if self.detector else None
+
         if not persons:
             print("[VLM THREAT ANALYSIS] No tracked objects detected in this video to analyze.")
         for p_id, p_data in persons.items():
             kf_paths = p_data.get("keyframes", [])
             appearances = p_data.get("appearances", [])
+
+            # First, perform VLM class verification constrained to the model's supported classes
+            verified_class = verify_object_class(
+                keyframe_paths=kf_paths,
+                target_id=str(p_id),
+                fallback_class=p_data.get("class", "person"),
+                allowed_classes=model_classes
+            )
+            if verified_class:
+                p_data["class"] = verified_class
+
             pseudo_result = {
                 "id_number": str(p_id),
                 "class": p_data.get("class", "person"),
@@ -376,7 +389,7 @@ class VideoProcessor:
                 reid_cnt
             )
             print(
-                f"[VLM ANALYSIS] Target {p_id}: "
+                f"[VLM ANALYSIS] Target {p_id} ({p_data['class']}): "
                 f"Severity = Level {sev_level} ({sev_label}) | Action = {p_data['suggest_action']}"
             )
 
