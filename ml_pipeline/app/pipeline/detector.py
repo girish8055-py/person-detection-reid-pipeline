@@ -125,9 +125,9 @@ class PersonDetector:
                     area_b = (x2_b - x1_b) * (y2_b - y1_b)
                     iou = inter_area / float(area_a + area_b - inter_area)
 
-                    # If IoU > 50% or smaller box is 85% covered by larger box, discard duplicate
+                    # If IoU > 25% or smaller box has >40% overlap with higher-confidence box, drop duplicate
                     overlap_ratio = inter_area / float(min(area_a, area_b))
-                    if iou > 0.50 or overlap_ratio > 0.85:
+                    if iou > 0.25 or overlap_ratio > 0.40:
                         keep = False
                         break
 

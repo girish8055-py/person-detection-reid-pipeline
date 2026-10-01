@@ -41,7 +41,7 @@ VIDEO_PATH = os.path.join(BASE_DIR, "1.mp4")
 # -------------------------------------------------------
 detector = PersonDetector(
     model_path=MODEL_PATH,
-    confidence=0.15
+    confidence=0.25
 )
 
 # -------------------------------------------------------

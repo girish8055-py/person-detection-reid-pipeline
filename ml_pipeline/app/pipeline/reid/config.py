@@ -24,9 +24,8 @@ class ReIDConfig:
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-    # 0.35 threshold with feature bank matching provides a balanced tradeoff between
-    # robust re-identification across pose changes and preventing false merges.
-    similarity_threshold: float = 0.35
+    # 0.50 threshold with DINOv2 768-D feature bank prevents false merges between different targets.
+    similarity_threshold: float = 0.50
     # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 
@@ -36,9 +35,9 @@ class ReIDConfig:
 
     # ---------------- Spatio-temporal gating ----------------
     use_spatiotemporal_gating: bool = True
-    max_time_gap_seconds: float = 180.0     # allow re-identification up to 3 minutes after disappearing
-    max_center_jump_px: float = 2000.0      # flexible spatial distance limit for moving targets
-    max_bbox_area_ratio: float = 6.0        # flexible scale change ratio to handle drone scale changes
+    max_time_gap_seconds: float = 60.0      # allow re-identification up to 1 minute after disappearing
+    max_center_jump_px: float = 1000.0      # realistic spatial distance limit for moving targets
+    max_bbox_area_ratio: float = 4.0        # scale change ratio limit
 
     # ---------------- Identity bookkeeping ----------------
     id_prefix: str = "Person_"
