@@ -129,7 +129,7 @@ def build_result_json(persons):
 
             "suggest_action": suggest_act,
 
-            "evidence": {
+            "evidence": person.get("evidence") or {
                 "file_name": person_file_name,
                 "file_size": person.get("file_size"),
                 "file_url": person_file_url

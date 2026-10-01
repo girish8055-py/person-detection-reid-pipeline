@@ -35,6 +35,10 @@ def crop_person(frame: np.ndarray, bbox: Tuple[float, float, float, float], pad_
     return frame[y1:y2, x1:x2]
 
 
+# Generic class-agnostic alias for cropping any detected object class
+crop_object = crop_person
+
+
 def xywh_to_xyxy(x: float, y: float, w: float, h: float) -> Tuple[float, float, float, float]:
     return x, y, x + w, y + h
 

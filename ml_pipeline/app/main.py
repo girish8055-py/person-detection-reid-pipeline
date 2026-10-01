@@ -21,7 +21,7 @@ telemetry_reader = TelemetryReader(
 # Initialize Managers
 # -------------------------------------------------------
 person_manager = PersonManager()
-identity_manager = IdentityManager(weights_path=os.path.join(BASE_DIR, "models", "osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth"))
+identity_manager = IdentityManager(weights_path=os.path.join(BASE_DIR, "models", "osnet_ain_x1_0_imagenet.pth"))
 json_writer = JsonWriter()
 screenshot_manager = ScreenshotManager(output_folder=output_folder)
 #screenshot_manager = ScreenshotManager()
@@ -123,9 +123,10 @@ while True:
             # -----------------------------------------------
             for det in detections:
 
-                screenshot_manager.save_best_detection(
+                target_id = det.get("target_id") or det["person_id"]
+                screenshot_manager.save_detection_evidence(
                     frame,
-                    det["person_id"],
+                    target_id,
                     det
                 )
 

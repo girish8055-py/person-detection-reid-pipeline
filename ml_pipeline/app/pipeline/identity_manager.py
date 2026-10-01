@@ -23,7 +23,7 @@ from pipeline.reid.embedding_database import PersonRecord
 
 class IdentityManager:
 
-    def __init__(self, weights_path: str = "models/osnet_x1_0_imagenet.pth"):
+    def __init__(self, weights_path: Optional[str] = "models/dinov2_vitb14.safetensors"):
         self.config = ReIDConfig(weights_path=weights_path)
         self.extractor = OSNetReIDExtractor(self.config)
         self.core = ReIDCore(self.config)

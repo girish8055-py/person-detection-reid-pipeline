@@ -262,7 +262,8 @@ class VideoProcessor:
                     print(f"[DETECTION] Frame {frame_count} @ {time_str} | {len(detections)} detection(s): {', '.join(det_info)}")
 
                     for det in detections:
-                        screenshot_manager.save_best_detection(frame, det["person_id"], det)
+                        target_id = det.get("target_id") or det.get("person_id")
+                        screenshot_manager.save_detection_evidence(frame, target_id, det)
 
             # Draw bounding boxes and IDs on the annotated video frame
             if detections and video_writer.isOpened():

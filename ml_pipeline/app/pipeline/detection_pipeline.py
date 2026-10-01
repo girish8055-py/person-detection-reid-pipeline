@@ -36,7 +36,7 @@ class DetectionPipeline:
     def __init__(
         self,
         model_path: str,
-        reid_weights_path: str = "models/osnet_x1_0_imagenet.pth",
+        reid_weights_path: str = "models/osnet_ain_x1_0_imagenet.pth",
         output_folder: str = "outputs",
         confidence: float = 0.25,
     ):
@@ -124,7 +124,7 @@ class DetectionPipeline:
 if __name__ == "__main__":
     pipeline = DetectionPipeline(
         model_path=get_latest_model_path(),
-        reid_weights_path="models/osnet_x1_0_imagenet.pth",
+        reid_weights_path="models/osnet_ain_x1_0_imagenet.pth",
         output_folder="outputs",
     )
     pipeline.run("video.mp4")

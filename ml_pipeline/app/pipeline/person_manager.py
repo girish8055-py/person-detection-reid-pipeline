@@ -24,8 +24,9 @@ class PersonManager:
 
     def __init__(self):
 
-        # person_id -> metadata
-        self.persons: Dict[int, dict] = {}
+        # target_id -> metadata (supports any object class: Vehicle_001, Person_001, etc.)
+        self.persons: Dict[str, dict] = {}
+        self.targets = self.persons
 
     def update(self, detections, current_time):
 
@@ -34,13 +35,14 @@ class PersonManager:
         updated_detections = []
 
         for det in detections:
-            person_id = det["person_id"]
+            target_id = det.get("target_id") or det.get("person_id")
 
-            det["person_id"] = person_id
+            det["target_id"] = target_id
+            det["person_id"] = target_id
 
             updated_detections.append(det)
 
-            active_persons.add(person_id)
+            active_persons.add(target_id)
 
             lat = det.get("lat")
             lon = det.get("lon")
@@ -235,3 +237,11 @@ class PersonManager:
     def get_persons(self):
 
         return self.persons
+
+    def get_targets(self):
+        """Generic class-agnostic method to get all tracked object records."""
+        return self.persons
+
+
+# Generic class-agnostic alias for tracked object lifecycle management
+TargetManager = PersonManager

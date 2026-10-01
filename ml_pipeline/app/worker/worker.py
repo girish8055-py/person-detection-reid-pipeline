@@ -577,33 +577,57 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
                         if os.path.exists(alt_dir2):
                             person_dir = alt_dir2
                 
-                src_file = os.path.join(person_dir, "best_detection.jpg")
-                dest_filename = f"{raw_person_id}_{time_str}.jpg"
-                dest_file = os.path.join(person_dir, dest_filename)
+                evidence_items = [
+                    ("first_detection.jpg", f"{raw_person_id}_first_{time_str}.jpg"),
+                    ("middle_detection.jpg", f"{raw_person_id}_middle_{time_str}.jpg"),
+                    ("last_detection.jpg", f"{raw_person_id}_last_{time_str}.jpg"),
+                    ("best_detection.jpg", f"{raw_person_id}_{time_str}.jpg"),
+                ]
                 
-                file_size = 0
-                folder_size = 0
-                
-                if os.path.exists(src_file):
-                    try:
-                        if os.path.exists(dest_file):
-                            os.remove(dest_file)
-                        os.rename(src_file, dest_file)
-                        logger.info("[%s] Saved detection screenshot: %s", server_name, dest_file)
-                    except Exception as rename_err:
-                        logger.warning("[%s] Could not rename %s to %s: %s", server_name, src_file, dest_file, rename_err)
-                
-                if not os.path.exists(dest_file) and os.path.exists(src_file):
-                    dest_file = src_file
-                    dest_filename = f"{raw_person_id}_{time_str}.jpg"
+                uploaded_evidence_map = {}
+                primary_file_name = None
+                primary_file_size = 0
+                primary_file_url = None
 
-                if os.path.exists(dest_file):
-                    file_size = os.path.getsize(dest_file)
-                    try:
-                        files_to_upload[dest_filename] = open(dest_file, "rb")
-                    except Exception as open_err:
-                        logger.warning("[%s] Could not open file %s for upload: %s", server_name, dest_file, open_err)
-                
+                for src_name, target_dest_name in evidence_items:
+                    src_file = os.path.join(person_dir, src_name)
+                    if not os.path.exists(src_file):
+                        continue
+
+                    dest_file = os.path.join(person_dir, target_dest_name)
+                    if src_file != dest_file:
+                        try:
+                            if os.path.exists(dest_file):
+                                os.remove(dest_file)
+                            os.rename(src_file, dest_file)
+                        except Exception as rename_err:
+                            dest_file = src_file
+
+                    if os.path.exists(dest_file):
+                        f_sz = os.path.getsize(dest_file)
+                        try:
+                            files_to_upload[target_dest_name] = open(dest_file, "rb")
+                        except Exception as open_err:
+                            logger.warning("[%s] Could not open file %s for upload: %s", server_name, dest_file, open_err)
+
+                        f_url = upload_to_azure(
+                            dest_file,
+                            target_dest_name,
+                            flight_id=job.get("flight_id", "default"),
+                            sas_url=job.get("upload_url"),
+                            base_url=base_url
+                        )
+                        key_name = src_name.replace(".jpg", "")
+                        uploaded_evidence_map[key_name] = {
+                            "file_name": target_dest_name,
+                            "file_size": f_sz,
+                            "file_url": f_url
+                        }
+                        if not primary_file_name or "middle" in key_name or "best" in key_name:
+                            primary_file_name = target_dest_name
+                            primary_file_size = f_sz
+                            primary_file_url = f_url
+
                 if os.path.exists(person_dir):
                     # compute folder size
                     for root_dir, _, filenames in os.walk(person_dir):
@@ -611,25 +635,18 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
                             fp = os.path.join(root_dir, f)
                             if os.path.exists(fp):
                                 folder_size += os.path.getsize(fp)
-                
-                # Upload to Azure / SAS Upload URL
-                file_url = None
-                if os.path.exists(dest_file):
-                    file_url = upload_to_azure(
-                        dest_file,
-                        dest_filename,
-                        flight_id=job.get("flight_id", "default"),
-                        sas_url=job.get("upload_url"),
-                        base_url=base_url
-                    )
-                    logger.info("[%s] Detection screenshot uploaded. URL: %s", server_name, file_url)
-                
-                pval["file_name"] = dest_filename
-                pval["file_size"] = file_size
-                pval["file_url"] = file_url
-                
-                file_sizes[dest_filename] = {
-                    "file_size": file_size,
+
+                pval["file_name"] = primary_file_name
+                pval["file_size"] = primary_file_size
+                pval["file_url"] = primary_file_url
+                pval["evidence"] = uploaded_evidence_map if uploaded_evidence_map else {
+                    "file_name": primary_file_name,
+                    "file_size": primary_file_size,
+                    "file_url": primary_file_url
+                }
+
+                file_sizes[primary_file_name or raw_person_id] = {
+                    "file_size": primary_file_size,
                     "folder_size": folder_size
                 }
 

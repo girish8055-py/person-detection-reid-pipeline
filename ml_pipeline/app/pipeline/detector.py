@@ -21,9 +21,9 @@ class PersonDetector:
         model_path: str,
         confidence: float = 0.25,
         tracker: str = "bytetrack.yaml",
-        min_box_width: int = 12,
-        min_box_height: int = 15,
-        min_box_area: int = 180,
+        min_box_width: int = 25,
+        min_box_height: int = 35,
+        min_box_area: int = 800,
     ):
         """
         Initialize YOLO model.
@@ -113,3 +113,7 @@ class PersonDetector:
                 )
 
         return detections
+
+
+# Generic class-agnostic alias for multi-class target detection
+ObjectDetector = PersonDetector

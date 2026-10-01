@@ -185,3 +185,7 @@ class EmbeddingDatabase:
 
     def __len__(self) -> int:
         return len(self._records)
+
+
+# Generic class-agnostic alias for tracked object embedding records
+TargetRecord = PersonRecord
