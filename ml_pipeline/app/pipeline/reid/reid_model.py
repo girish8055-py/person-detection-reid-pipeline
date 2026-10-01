@@ -27,7 +27,19 @@ class UniversalReIDExtractor:
         logger.info("Initializing Universal DINOv2 ViT-B/14 ReID Extractor on %s...", self.device)
 
         # Load DINOv2 Base model from PyTorch Hub (86M params, ~450MB VRAM)
-        self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+        try:
+            self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+        except TypeError:
+            import os, glob
+            hub_dir = os.path.expanduser('~/.cache/torch/hub/facebookresearch_dinov2_main')
+            if os.path.exists(hub_dir):
+                for py_file in glob.glob(os.path.join(hub_dir, '**', '*.py'), recursive=True):
+                    with open(py_file, 'r+') as f:
+                        content = f.read()
+                        if 'from __future__ import annotations' not in content:
+                            f.seek(0, 0)
+                            f.write('from __future__ import annotations\n' + content)
+            self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
         self.model.to(self.device)
         self.model.eval()
 
