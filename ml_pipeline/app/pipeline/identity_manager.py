@@ -16,7 +16,7 @@ import time
 from typing import List, Optional
 
 from pipeline.reid.config import ReIDConfig, prefix_for_class
-from pipeline.reid.reid_model import OSNetReIDExtractor
+from pipeline.reid.reid_model import UniversalReIDExtractor
 from pipeline.reid.identity_manager import IdentityManager as ReIDCore
 from pipeline.reid.embedding_database import PersonRecord
 
@@ -25,7 +25,7 @@ class IdentityManager:
 
     def __init__(self, weights_path: Optional[str] = "models/dinov2_vitb14.safetensors"):
         self.config = ReIDConfig(weights_path=weights_path)
-        self.extractor = OSNetReIDExtractor(self.config)
+        self.extractor = UniversalReIDExtractor(device=self.config.device)
         self.core = ReIDCore(self.config)
 
     def resolve(self, track_id, crop_bgr, bbox, confidence=1.0, timestamp=None, obj_class=None):

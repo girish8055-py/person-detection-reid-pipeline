@@ -7,6 +7,7 @@ Supports ALL custom classes dynamically.
 """
 
 import logging
+from typing import List, Optional, Union
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -40,7 +41,7 @@ class UniversalReIDExtractor:
         ])
 
     @torch.no_grad()
-    def extract_batch(self, crops_bgr: list[np.ndarray]) -> np.ndarray:
+    def extract_batch(self, crops_bgr: List[np.ndarray]) -> np.ndarray:
         """
         Input: List of BGR numpy image crops of ANY custom YOLO class.
         Output: (N, 768) L2-normalized float32 embeddings.

@@ -218,8 +218,8 @@ def run_isolated_reid_test(
 
 
 if __name__ == "__main__":
-    DEFAULT_VIDEO = os.path.join(APP_DIR, "upload", "//home/aiml/Desktop/deployment_model/person-detection-reid-pipeline/3a19e7fc-4944-4479-87dd-7ea15389d04a.webm")
-    DEFAULT_YOLO = os.path.join(APP_DIR, "downloaded_model", "Drone_Model_Latest_v3.pt")
+    DEFAULT_VIDEO = os.path.join(APP_DIR, "upload", "/home/aiml/Desktop/deployment_model/person-detection-reid-pipeline/ml_pipeline/app/upload/idmsapi6a6iagm4.mp4")
+    DEFAULT_YOLO = os.path.join(APP_DIR, "downloaded_model", "/home/aiml/Desktop/deployment_model/person-detection-reid-pipeline/ml_pipeline/app/downloaded_model/best.pt")
 
     parser = argparse.ArgumentParser(description="Standalone Isolated Multi-Class ReID Video Test Script")
     parser.add_argument("--video", type=str, default=DEFAULT_VIDEO, help="Path to input video file")
