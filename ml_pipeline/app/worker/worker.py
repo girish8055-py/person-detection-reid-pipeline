@@ -636,14 +636,21 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
                             if os.path.exists(fp):
                                 folder_size += os.path.getsize(fp)
 
+                # Collect unique evidence blob URLs into an array (list of strings)
+                evidence_urls = []
+                for k in ["first_detection", "middle_detection", "last_detection", "best_detection"]:
+                    if k in uploaded_evidence_map and uploaded_evidence_map[k].get("file_url"):
+                        url_val = uploaded_evidence_map[k]["file_url"]
+                        if url_val not in evidence_urls:
+                            evidence_urls.append(url_val)
+
+                if not evidence_urls and primary_file_url:
+                    evidence_urls.append(primary_file_url)
+
                 pval["file_name"] = primary_file_name
                 pval["file_size"] = primary_file_size
                 pval["file_url"] = primary_file_url
-                pval["evidence"] = uploaded_evidence_map if uploaded_evidence_map else {
-                    "file_name": primary_file_name,
-                    "file_size": primary_file_size,
-                    "file_url": primary_file_url
-                }
+                pval["evidence"] = evidence_urls
 
                 file_sizes[primary_file_name or raw_person_id] = {
                     "file_size": primary_file_size,

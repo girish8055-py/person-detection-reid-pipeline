@@ -265,7 +265,7 @@ class VideoProcessor:
                         target_id = det.get("target_id") or det.get("person_id")
                         screenshot_manager.save_detection_evidence(frame, target_id, det)
 
-            # Draw bounding boxes and IDs on the annotated video frame
+            # Draw bounding boxes and clean pill-box IDs on the annotated video frame
             if detections and video_writer.isOpened():
                 annotated_frame = frame.copy()
                 for det in detections:
@@ -276,8 +276,19 @@ class VideoProcessor:
                         conf = det.get("confidence", 0.0)
                         display_id = str(person_id)
                         label = f"{display_id} ({conf:.2f})"
+                        
+                        # Draw bounding box
                         cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        cv2.putText(annotated_frame, label, (x1, max(y1 - 10, 15)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                        
+                        # Calculate text label dimensions for background pill box
+                        (w, h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+                        lbl_y1 = max(y1 - h - 10, 5)
+                        lbl_y2 = lbl_y1 + h + 6
+                        
+                        # Filled black background rectangle behind label text
+                        cv2.rectangle(annotated_frame, (x1, lbl_y1), (x1 + w + 8, lbl_y2), (0, 0, 0), cv2.FILLED)
+                        # Green label text over black background
+                        cv2.putText(annotated_frame, label, (x1 + 4, lbl_y2 - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
                 video_writer.write(annotated_frame)
             elif video_writer.isOpened():
                 video_writer.write(frame)

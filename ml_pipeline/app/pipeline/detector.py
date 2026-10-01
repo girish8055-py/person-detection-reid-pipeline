@@ -73,23 +73,18 @@ class PersonDetector:
             verbose=False
         )
 
-        detections = []
+        raw_detections = []
 
         for result in results:
-
             if result.boxes is None:
                 continue
 
             for idx, box in enumerate(result.boxes):
-
-                # Use ByteTrack ID if present; fallback to box index if tracker didn't assign ID
                 track_id = int(box.id.item()) if box.id is not None else (idx + 1)
-
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 w = int(x2) - int(x1)
                 h = int(y2) - int(y1)
 
-                # Filter out tiny noise bounding boxes
                 if w < self.min_box_width or h < self.min_box_height or (w * h) < self.min_box_area:
                     continue
 
@@ -97,20 +92,47 @@ class PersonDetector:
                 names_dict = getattr(self.model, "names", getattr(result, "names", {}))
                 raw_class = names_dict.get(class_id, f"class_{class_id}") if isinstance(names_dict, dict) else f"class_{class_id}"
 
-                detections.append(
+                raw_detections.append(
                     {
                         "track_id": track_id,
-                        "bbox": [
-                            int(x1),
-                            int(y1),
-                            int(x2),
-                            int(y2)
-                        ],
+                        "bbox": [int(x1), int(y1), int(x2), int(y2)],
                         "confidence": float(box.conf.item()),
-                        "class_id": int(box.cls.item()),
+                        "class_id": class_id,
                         "class": normalize_class(raw_class)
                     }
                 )
+
+        # Apply IoU Non-Maximum Suppression (NMS) to eliminate duplicate overlapping boxes
+        detections = []
+        # Sort by confidence descending
+        raw_detections.sort(key=lambda d: d["confidence"], reverse=True)
+
+        for det in raw_detections:
+            keep = True
+            x1_a, y1_a, x2_a, y2_a = det["bbox"]
+            area_a = (x2_a - x1_a) * (y2_a - y1_a)
+
+            for kept in detections:
+                x1_b, y1_b, x2_b, y2_b = kept["bbox"]
+                # Compute intersection
+                inter_x1 = max(x1_a, x1_b)
+                inter_y1 = max(y1_a, y1_b)
+                inter_x2 = min(x2_a, x2_b)
+                inter_y2 = min(y2_a, y2_b)
+
+                if inter_x2 > inter_x1 and inter_y2 > inter_y1:
+                    inter_area = (inter_x2 - inter_x1) * (inter_y2 - inter_y1)
+                    area_b = (x2_b - x1_b) * (y2_b - y1_b)
+                    iou = inter_area / float(area_a + area_b - inter_area)
+
+                    # If IoU > 50% or smaller box is 85% covered by larger box, discard duplicate
+                    overlap_ratio = inter_area / float(min(area_a, area_b))
+                    if iou > 0.50 or overlap_ratio > 0.85:
+                        keep = False
+                        break
+
+            if keep:
+                detections.append(det)
 
         return detections
 

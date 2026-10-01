@@ -129,11 +129,11 @@ def build_result_json(persons):
 
             "suggest_action": suggest_act,
 
-            "evidence": person.get("evidence") or {
-                "file_name": person_file_name,
-                "file_size": person.get("file_size"),
-                "file_url": person_file_url
-            },
+            "evidence": person.get("evidence") if isinstance(person.get("evidence"), list) else (
+                [person.get("evidence")] if isinstance(person.get("evidence"), str) else (
+                    [person_file_url] if person_file_url else []
+                )
+            ),
 
             "appearances": appearances
 
