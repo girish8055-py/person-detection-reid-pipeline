@@ -36,6 +36,7 @@ class PersonManager:
 
         for det in detections:
             target_id = det.get("target_id") or det.get("person_id")
+            person_id = target_id
 
             det["target_id"] = target_id
             det["person_id"] = target_id

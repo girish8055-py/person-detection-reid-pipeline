@@ -1,7 +1,7 @@
 """
 identity_manager.py
 
-Maps temporary ByteTrack IDs to PERMANENT Person IDs using OSNet ReID
+Maps temporary ByteTrack IDs to PERMANENT Person IDs using DINOv2 ReID
 embeddings, so a person keeps the same identity even if ByteTrack's
 track_id changes after an occlusion or re-entry.
 
@@ -23,9 +23,9 @@ from pipeline.reid.embedding_database import PersonRecord
 
 class IdentityManager:
 
-    def __init__(self, weights_path: Optional[str] = "models/dinov2_vitb14.safetensors"):
-        self.config = ReIDConfig(weights_path=weights_path)
-        self.extractor = UniversalReIDExtractor(device=self.config.device)
+    def __init__(self, weights_path: Optional[str] = None):
+        self.config = ReIDConfig(weights_path=weights_path) if weights_path else ReIDConfig()
+        self.extractor = UniversalReIDExtractor(weights_path=weights_path, device=self.config.device)
         self.core = ReIDCore(self.config)
 
     def resolve(self, track_id, crop_bgr, bbox, confidence=1.0, timestamp=None, obj_class=None):
@@ -60,7 +60,7 @@ class IdentityManager:
         """
         Batched version -- use this in your per-frame loop instead of calling
         resolve() once per person. Much faster on the RTX 3050 since all
-        crops go through OSNet in a single forward pass.
+        crops go through DINOv2 in a single forward pass.
 
         Enforces same-frame uniqueness: two detections in the same frame
         will never share the same global_id.

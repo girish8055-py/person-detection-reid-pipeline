@@ -32,3 +32,4 @@ ml_pipeline/app/outputs*/
 Person_Detection_ReID_Pipeline_Documentation_v*.docx
 AeroMegh_IDMS_Complete_System_Documentation_v*.docx
 test_isolated_reid.py
+ml_pipeline/app/models/dinov2/

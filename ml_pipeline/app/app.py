@@ -59,7 +59,7 @@ else:
 REID_WEIGHTS_PATH = os.path.join(
     BASE_DIR,
     "models",
-    "osnet_ain_x1_0_imagenet.pth"
+    "dinov2_vitb14_pretrain.pth"
 )
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "upload")
 OUTPUT_ROOT = os.path.join(BASE_DIR, "outputs")

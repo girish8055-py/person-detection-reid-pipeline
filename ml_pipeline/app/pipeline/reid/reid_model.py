@@ -14,6 +14,8 @@ import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 
+from .dinov2_download import DINOV2_WEIGHTS_PATH, ensure_dinov2
+
 logger = logging.getLogger(__name__)
 
 class UniversalReIDExtractor:
@@ -22,24 +24,17 @@ class UniversalReIDExtractor:
     Works for ANY custom class detected by YOLO (person, drone, vehicle, boat, bag, etc.)
     """
 
-    def __init__(self, device: str = "cuda"):
+    def __init__(self, weights_path: Optional[str] = None, device: str = "cuda"):
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
         logger.info("Initializing Universal DINOv2 ViT-B/14 ReID Extractor on %s...", self.device)
 
-        # Load DINOv2 Base model from PyTorch Hub (86M params, ~450MB VRAM)
-        try:
-            self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
-        except TypeError:
-            import os, glob
-            hub_dir = os.path.expanduser('~/.cache/torch/hub/facebookresearch_dinov2_main')
-            if os.path.exists(hub_dir):
-                for py_file in glob.glob(os.path.join(hub_dir, '**', '*.py'), recursive=True):
-                    with open(py_file, 'r+') as f:
-                        content = f.read()
-                        if 'from __future__ import annotations' not in content:
-                            f.seek(0, 0)
-                            f.write('from __future__ import annotations\n' + content)
-            self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+        # Load DINOv2 Base (86M params, ~450MB VRAM) from the local models/ folder;
+        # source + weights are downloaded there on first run if missing.
+        repo_dir, weights_path = ensure_dinov2(weights_path=weights_path or DINOV2_WEIGHTS_PATH)
+        self.model = torch.hub.load(repo_dir, "dinov2_vitb14", source="local", pretrained=False)
+        state_dict = torch.load(weights_path, map_location="cpu")
+        self.model.load_state_dict(state_dict)
+        logger.info("Loaded DINOv2 weights from %s", weights_path)
         self.model.to(self.device)
         self.model.eval()
 
@@ -51,6 +46,10 @@ class UniversalReIDExtractor:
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
+
+    def extract(self, crop_bgr: np.ndarray) -> np.ndarray:
+        """Single-crop convenience wrapper around extract_batch -> (768,) embedding."""
+        return self.extract_batch([crop_bgr])[0]
 
     @torch.no_grad()
     def extract_batch(self, crops_bgr: List[np.ndarray]) -> np.ndarray:

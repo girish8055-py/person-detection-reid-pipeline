@@ -21,7 +21,7 @@ telemetry_reader = TelemetryReader(
 # Initialize Managers
 # -------------------------------------------------------
 person_manager = PersonManager()
-identity_manager = IdentityManager(weights_path=os.path.join(BASE_DIR, "models", "osnet_ain_x1_0_imagenet.pth"))
+identity_manager = IdentityManager(weights_path=os.path.join(BASE_DIR, "models", "dinov2_vitb14_pretrain.pth"))
 json_writer = JsonWriter()
 screenshot_manager = ScreenshotManager(output_folder=output_folder)
 #screenshot_manager = ScreenshotManager()

@@ -5,7 +5,7 @@ Orchestrates the full flow:
 
     frame -> PersonDetector (YOLO + ByteTrack)
           -> crop each person
-          -> IdentityManager.resolve_batch() (OSNet embeddings + ReID matching)
+          -> IdentityManager.resolve_batch() (DINOv2 embeddings + ReID matching)
           -> stamp det["person_id"] on every detection
           -> PersonManager.update() (appearance / duration bookkeeping)
           -> JsonWriter.write() (final export, at the end)
@@ -36,7 +36,7 @@ class DetectionPipeline:
     def __init__(
         self,
         model_path: str,
-        reid_weights_path: str = "models/osnet_ain_x1_0_imagenet.pth",
+        reid_weights_path: str = "models/dinov2_vitb14_pretrain.pth",
         output_folder: str = "outputs",
         confidence: float = 0.25,
     ):
@@ -61,7 +61,7 @@ class DetectionPipeline:
         # Crop every tracked person out of this frame
         crops = [crop_person(frame, bbox, pad_ratio=0.05) for bbox in bboxes]
 
-        # One batched OSNet forward pass for the whole frame -> stable ids
+        # One batched DINOv2 forward pass for the whole frame -> stable ids
         person_ids = self.identity_manager.resolve_batch(
             track_ids=track_ids,
             crops_bgr=crops,
@@ -124,7 +124,7 @@ class DetectionPipeline:
 if __name__ == "__main__":
     pipeline = DetectionPipeline(
         model_path=get_latest_model_path(),
-        reid_weights_path="models/osnet_ain_x1_0_imagenet.pth",
+        reid_weights_path="models/dinov2_vitb14_pretrain.pth",
         output_folder="outputs",
     )
     pipeline.run("video.mp4")

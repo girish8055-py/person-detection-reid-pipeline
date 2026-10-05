@@ -6,7 +6,7 @@ so it can be triggered from the web app (Flask) instead of only running as
 a standalone script. No cv2.imshow / waitKey here -- this runs headless on
 a server, so no GUI window.
 
-Model loading (YOLO detector + OSNet ReID extractor) happens ONCE per
+Model loading (YOLO detector + DINOv2 ReID extractor) happens ONCE per
 VideoProcessor instance and is reused across videos, since loading these
 models is the expensive part. person_manager and screenshot_manager are
 created fresh per video, since their state (appearances, durations) belongs
@@ -80,13 +80,21 @@ class VideoProcessor:
 
     def __init__(self, model_path: str, reid_weights_path: str, confidence: float = 0.25, target_fps: int = 10):
         """
-        Loads YOLO + OSNet once. Reuse this instance across multiple videos
+        Loads YOLO + DINOv2 once. Reuse this instance across multiple videos
         so you don't pay model-loading cost per job.
         """
-        self.detector = PersonDetector(model_path=model_path, confidence=confidence)
+        self.confidence = confidence
         self.reid_weights_path = reid_weights_path
         self.target_fps = target_fps
-        self._current_model_path = model_path
+        # The default model is optional at startup: tasks may supply their own
+        # model, which process_video() loads on demand.
+        if model_path and os.path.exists(model_path):
+            self.detector = PersonDetector(model_path=model_path, confidence=confidence)
+            self._current_model_path = model_path
+        else:
+            logger.warning("Default detection model not found at %s; will load per task.", model_path)
+            self.detector = None
+            self._current_model_path = None
 
     def process_video(
         self,
@@ -120,7 +128,7 @@ class VideoProcessor:
         if model_path is not None:
             if self._current_model_path != model_path:
                 logger.info("Reloading detector model from: %s", model_path)
-                confidence = self.detector.confidence if self.detector else 0.25
+                confidence = self.detector.confidence if self.detector else self.confidence
                 self.detector = PersonDetector(model_path=model_path, confidence=confidence)
                 self._current_model_path = model_path
 

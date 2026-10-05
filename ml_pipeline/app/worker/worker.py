@@ -588,6 +588,7 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
                 primary_file_name = None
                 primary_file_size = 0
                 primary_file_url = None
+                folder_size = 0
 
                 for src_name, target_dest_name in evidence_items:
                     src_file = os.path.join(person_dir, src_name)

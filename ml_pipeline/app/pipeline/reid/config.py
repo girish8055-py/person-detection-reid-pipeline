@@ -14,8 +14,8 @@ import torch
 class ReIDConfig:
     # ---------------- Model ----------------
     model_name: str = "dinov2_vitb14"
-    # Path to a local .safetensors or .pth checkpoint.
-    weights_path: str = "models/dinov2_vitb14.safetensors"
+    # Local DINOv2 checkpoint (downloaded by reid/dinov2_download.py).
+    weights_path: str = "models/dinov2_vitb14_pretrain.pth"
     embedding_dim: int = 768
     input_size: Tuple[int, int] = (224, 224)  # (height, width), DINOv2 standard resolution
 
