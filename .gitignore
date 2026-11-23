@@ -18,6 +18,7 @@ __pycache__/
 !ml_pipeline/app/models/osnet_ain_x1_0_imagenet.pth
 ml_pipeline/app/vlm_models/
 ml_pipeline/app/downloaded_model/
+ml_pipeline/app/models/dinov2/
 
 # Temporary outputs & uploaded videos
 *.mp4
@@ -32,4 +33,6 @@ ml_pipeline/app/outputs*/
 Person_Detection_ReID_Pipeline_Documentation_v*.docx
 AeroMegh_IDMS_Complete_System_Documentation_v*.docx
 test_isolated_reid.py
-ml_pipeline/app/models/dinov2/
+
+isolated_output/
+*.json

@@ -24,14 +24,15 @@ class ReIDConfig:
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-    # 0.50 threshold with DINOv2 768-D feature bank prevents false merges between different targets.
-    similarity_threshold: float = 0.50
+    # 0.40 similarity threshold tuned for DINOv2 multi-class ReID (prevents over-fragmentation from rotation & motion blur)
+    similarity_threshold: float = 0.40
     # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 
     # ---------------- Embedding smoothing ----------------
     # new_embedding = (1 - ema_alpha) * old_embedding + ema_alpha * current_embedding
-    ema_alpha: float = 0.35
+    # Lower alpha (0.25) preserves past viewpoint features in gallery memory longer
+    ema_alpha: float = 0.25
 
     # ---------------- Spatio-temporal gating ----------------
     use_spatiotemporal_gating: bool = True
