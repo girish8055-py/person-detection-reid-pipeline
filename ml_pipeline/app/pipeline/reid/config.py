@@ -13,26 +13,29 @@ import torch
 @dataclass
 class ReIDConfig:
     # ---------------- Model ----------------
-    model_name: str = "dinov2_vitb14"
-    # Local DINOv2 checkpoint (downloaded by reid/dinov2_download.py).
-    weights_path: str = "models/dinov2_vitb14_pretrain.pth"
-    embedding_dim: int = 768
-    input_size: Tuple[int, int] = (224, 224)  # (height, width), DINOv2 standard resolution
+    # ConvNeXt-Base via timm: better than DINOv2 for distinguishing aerial object classes
+    # (drone vs vehicle vs person) because ImageNet pretraining provides object-level discrimination.
+    # Outputs 1024-D embeddings with strong spatial feature sensitivity.
+    model_name: str = "convnext_base"
+    weights_path: str = ""  # timm loads pretrained weights automatically; no local file needed
+    embedding_dim: int = 1024  # ConvNeXt-Base global average pool output
+    input_size: Tuple[int, int] = (224, 224)  # standard input size
 
     # ---------------- Device ----------------
     device: str = field(default_factory=lambda: "cuda" if torch.cuda.is_available() else "cpu")
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-    # 0.40 similarity threshold tuned for DINOv2 multi-class ReID (prevents over-fragmentation from rotation & motion blur)
-    similarity_threshold: float = 0.40
+    # 0.57 threshold tuned for ConvNeXt-Base aerial multi-class ReID.
+    # Higher value prevents cross-class confusion (drone vs vehicle from aerial view).
+    similarity_threshold: float = 0.57
     # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 
     # ---------------- Embedding smoothing ----------------
     # new_embedding = (1 - ema_alpha) * old_embedding + ema_alpha * current_embedding
-    # Lower alpha (0.25) preserves past viewpoint features in gallery memory longer
-    ema_alpha: float = 0.25
+    # 0.30 — balanced between adapting to new viewpoints and retaining stable class identity
+    ema_alpha: float = 0.30
 
     # ---------------- Spatio-temporal gating ----------------
     use_spatiotemporal_gating: bool = True

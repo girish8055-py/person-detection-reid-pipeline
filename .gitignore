@@ -35,4 +35,8 @@ AeroMegh_IDMS_Complete_System_Documentation_v*.docx
 test_isolated_reid.py
 
 isolated_output/
+dji_output/
+test_run_output/
+run_dji_pipeline.py
+test_pipeline_run.py
 *.json

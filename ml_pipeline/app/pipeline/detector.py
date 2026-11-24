@@ -8,7 +8,10 @@ Responsibilities:
 4. Return tracked detections.
 """
 
+import os
 from ultralytics import YOLO
+
+DEFAULT_TRACKER_CONFIG = os.path.join(os.path.dirname(__file__), "bytetrack.yaml")
 
 
 def normalize_class(name: str) -> str:
@@ -20,10 +23,10 @@ class PersonDetector:
         self,
         model_path: str,
         confidence: float = 0.25,
-        tracker: str = "bytetrack.yaml",
-        min_box_width: int = 25,
-        min_box_height: int = 35,
-        min_box_area: int = 800,
+        tracker: str = None,
+        min_box_width: int = 0,
+        min_box_height: int = 0,
+        min_box_area: int = 0,
     ):
         """
         Initialize YOLO model.
@@ -32,14 +35,14 @@ class PersonDetector:
             model_path: Path to YOLO model.
             confidence: Detection confidence threshold.
             tracker: ByteTrack configuration file.
-            min_box_width: Minimum allowed bounding box width in pixels.
-            min_box_height: Minimum allowed bounding box height in pixels.
-            min_box_area: Minimum allowed bounding box area in sq pixels.
+            min_box_width: Minimum allowed bounding box width in pixels (0 = no filter).
+            min_box_height: Minimum allowed bounding box height in pixels (0 = no filter).
+            min_box_area: Minimum allowed bounding box area in sq pixels (0 = no filter).
         """
 
         self.model = YOLO(model_path)
         self.confidence = confidence
-        self.tracker = tracker
+        self.tracker = tracker or (DEFAULT_TRACKER_CONFIG if os.path.exists(DEFAULT_TRACKER_CONFIG) else "bytetrack.yaml")
         self.min_box_width = min_box_width
         self.min_box_height = min_box_height
         self.min_box_area = min_box_area
@@ -69,6 +72,7 @@ class PersonDetector:
             persist=True,
             tracker=self.tracker,
             conf=self.confidence,
+            iou=0.50,
             device=device,
             verbose=False
         )
@@ -85,7 +89,7 @@ class PersonDetector:
                 w = int(x2) - int(x1)
                 h = int(y2) - int(y1)
 
-                if w < self.min_box_width or h < self.min_box_height or (w * h) < self.min_box_area:
+                if w <= 0 or h <= 0:
                     continue
 
                 class_id = int(box.cls.item())
@@ -125,9 +129,9 @@ class PersonDetector:
                     area_b = (x2_b - x1_b) * (y2_b - y1_b)
                     iou = inter_area / float(area_a + area_b - inter_area)
 
-                    # If IoU > 25% or smaller box has >40% overlap with higher-confidence box, drop duplicate
+                    # If IoU > 50% or smaller box has >50% overlap with higher-confidence box, drop duplicate
                     overlap_ratio = inter_area / float(min(area_a, area_b))
-                    if iou > 0.25 or overlap_ratio > 0.40:
+                    if iou > 0.50 or overlap_ratio > 0.50:
                         keep = False
                         break
 

@@ -1,0 +1,8 @@
+# ByteTrack configuration tuned for sensitive aerial detection including small drones
+tracker_type: bytetrack
+track_high_thresh: 0.25   # First association stage threshold
+track_low_thresh: 0.10    # Second association stage threshold for low-score/occluded matches
+new_track_thresh: 0.25    # Threshold to spawn a new track (allows small/distant drones)
+track_buffer: 30          # Frames to keep lost tracks alive
+match_thresh: 0.80        # Matching threshold for linear assignment
+fuse_score: True          # Fuse detection score with motion/IoU for matching

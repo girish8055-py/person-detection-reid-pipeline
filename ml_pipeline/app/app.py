@@ -71,7 +71,7 @@ os.makedirs(OUTPUT_ROOT, exist_ok=True)
 processor = VideoProcessor(
     model_path=MODEL_PATH,
     reid_weights_path=REID_WEIGHTS_PATH,
-    confidence=0.25,
+    confidence=0.55,
     target_fps=2,
 )
 

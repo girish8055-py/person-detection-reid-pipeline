@@ -180,7 +180,7 @@ RESPOND IN VALID JSON ONLY:
 """
 
     payload = {
-        "model": "qwen2.5vl:3b",
+        "model": "qwen2.5vl:7b",
         "prompt": prompt,
         "images": images_b64,
         "stream": False,

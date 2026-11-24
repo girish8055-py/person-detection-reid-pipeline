@@ -75,6 +75,18 @@ class IdentityManager:
                 prev_rec.obj_class = "vehicle"
                 existing = prev_rec
 
+        # STRICT CLASS BARRIER: reject fast-path match if classes differ.
+        # This prevents a drone track from being silently reused as a vehicle
+        # or vice-versa even if ByteTrack re-assigned the same tracker_id.
+        if existing is not None and obj_class is not None:
+            if existing.obj_class != obj_class:
+                logger.warning(
+                    "STRICT CLASS BARRIER: tracker_id=%s tried to reuse %s (class=%s) "
+                    "but current detection is class=%s — minting new identity.",
+                    tracker_id, existing.global_id, existing.obj_class, obj_class,
+                )
+                existing = None
+
         if existing is not None:
             self.db.smooth_update(
                 existing.global_id, embedding, tracker_id, bbox, confidence, ts,
@@ -87,6 +99,8 @@ class IdentityManager:
             return existing.global_id
 
         # 2. New tracker_id -> search the gallery (same class only).
+        # gallery_arrays already filters by obj_class, but we double-check the
+        # candidate's class after matching to enforce the hard class barrier.
         gallery_ids, gallery_embs = self.db.gallery_arrays(camera_id=camera_id, obj_class=obj_class)
         candidate_id, score = best_match(
             embedding, gallery_ids, gallery_embs, self.cfg.similarity_threshold
@@ -95,6 +109,17 @@ class IdentityManager:
 
         if candidate_id is not None:
             candidate_rec = self.db.get(candidate_id)
+            # STRICT CLASS BARRIER on gallery re-attach: even if cosine similarity
+            # cleared the threshold, never merge across different object classes.
+            if candidate_rec is not None and obj_class is not None:
+                if candidate_rec.obj_class != obj_class:
+                    logger.warning(
+                        "STRICT CLASS BARRIER (gallery): candidate %s is class=%s "
+                        "but current detection is class=%s — refusing re-attach.",
+                        candidate_id, candidate_rec.obj_class, obj_class,
+                    )
+                    candidate_id = None
+                    candidate_rec = None
             if self._passes_spatiotemporal_gate(candidate_rec, bbox, ts):
                 self.db.smooth_update(
                     candidate_id, embedding, tracker_id, bbox, confidence, ts,

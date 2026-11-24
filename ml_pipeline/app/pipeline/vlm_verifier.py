@@ -11,11 +11,13 @@ must decide purely from visual content.
 """
 
 import base64
+import io
 import json
 import logging
 import os
 from typing import List, Optional
 
+from PIL import Image
 import requests
 
 logger = logging.getLogger(__name__)
@@ -23,13 +25,16 @@ logger = logging.getLogger(__name__)
 OLLAMA_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
 
 
-def _encode_image(image_path: str) -> Optional[str]:
-    """Read an image file and return its base64 encoding."""
+def _encode_image(image_path: str, max_dim: int = 512) -> Optional[str]:
+    """Read an image file, resize to stay within VLM context budget, and return base64 encoding."""
     if not image_path or not os.path.exists(image_path):
         return None
     try:
-        with open(image_path, "rb") as f:
-            return base64.b64encode(f.read()).decode("utf-8")
+        with Image.open(image_path) as img:
+            img.thumbnail((max_dim, max_dim))
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            return base64.b64encode(buf.getvalue()).decode("utf-8")
     except Exception as exc:
         logger.error("Failed to encode image %s: %s", image_path, exc)
         return None
@@ -45,9 +50,24 @@ def verify_object_class(
     Ask the VLM to look at one or more keyframes of a tracked object and
     decide its class, strictly constrained to the model's supported classes.
     """
-    images_b64: List[str] = []
+    # Prefer close-up target crop if available, supplemented by representative keyframe
+    candidate_images = []
+    if keyframe_paths:
+        target_dir = os.path.dirname(keyframe_paths[0])
+        for pref in ["best_detection.jpg", "middle_detection.jpg", "first_detection.jpg"]:
+            cand = os.path.join(target_dir, pref)
+            if os.path.exists(cand) and cand not in candidate_images:
+                candidate_images.append(cand)
+
     for kp in keyframe_paths:
-        enc = _encode_image(kp)
+        if kp not in candidate_images:
+            candidate_images.append(kp)
+        if len(candidate_images) >= 2:
+            break
+
+    images_b64: List[str] = []
+    for kp in candidate_images[:2]:
+        enc = _encode_image(kp, max_dim=512)
         if enc:
             images_b64.append(enc)
 
@@ -87,7 +107,7 @@ def verify_object_class(
     )
 
     payload = {
-        "model": "qwen2.5vl:3b",
+        "model": "qwen2.5vl:7b",
         "prompt": prompt,
         "images": images_b64,
         "stream": False,

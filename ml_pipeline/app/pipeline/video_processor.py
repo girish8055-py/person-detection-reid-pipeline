@@ -194,6 +194,10 @@ class VideoProcessor:
 
         report(0.0, "Starting video processing")
 
+        # Tracklet persistence gate (min_hits >= 2 to catch small/brief targets while avoiding 1-frame glitches)
+        track_hits = {}
+        MIN_HITS = 2
+
         while True:
             ret, frame = cap.read()
             if not ret:
@@ -214,7 +218,16 @@ class VideoProcessor:
                     if rw_ts < flight_start_ts or rw_ts > flight_end_ts:
                         continue
 
-                detections = self.detector.detect(frame)
+                raw_detections = self.detector.detect(frame)
+
+                # Maintain Frame-Hit Counter across frames for all tracked objects
+                for det in raw_detections:
+                    tid = det["track_id"]
+                    track_hits[tid] = track_hits.get(tid, 0) + 1
+
+                # Temporal Tracklet Persistence Gate: only emit/record confirmed tracks (min_hits >= 5)
+                # If track_hits[track_id] < 5, treat the track as unconfirmed/tentative and suppress it
+                detections = [det for det in raw_detections if track_hits.get(det["track_id"], 0) >= MIN_HITS]
 
                 if len(detections) > 0:
                     track_ids = [det["track_id"] for det in detections]
@@ -276,7 +289,13 @@ class VideoProcessor:
             # Draw bounding boxes and clean pill-box IDs on the annotated video frame
             if detections and video_writer.isOpened():
                 annotated_frame = frame.copy()
+                rendered_count = 0
                 for det in detections:
+                    tid = det.get("track_id")
+                    # NOISE SUPPRESSION: Only render confirmed tracks
+                    if tid is not None and track_hits.get(tid, 0) < MIN_HITS:
+                        continue
+
                     bbox = det.get("bbox")
                     if bbox and len(bbox) >= 4:
                         x1, y1, x2, y2 = [int(v) for v in bbox[:4]]
@@ -297,7 +316,11 @@ class VideoProcessor:
                         cv2.rectangle(annotated_frame, (x1, lbl_y1), (x1 + w + 8, lbl_y2), (0, 0, 0), cv2.FILLED)
                         # Green label text over black background
                         cv2.putText(annotated_frame, label, (x1 + 4, lbl_y2 - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
-                video_writer.write(annotated_frame)
+                        rendered_count += 1
+                if rendered_count > 0:
+                    video_writer.write(annotated_frame)
+                else:
+                    video_writer.write(frame)
             elif video_writer.isOpened():
                 video_writer.write(frame)
 
@@ -315,12 +338,8 @@ class VideoProcessor:
 
         all_persons = person_manager.get_persons()
         
-        # Speed optimization: filter out noisy/transient tracks that last < 1.5 seconds.
-        # This prevents opening the video to extract clips/keyframes 100+ times for glitch detections.
-        persons = {
-            p_id: p_data for p_id, p_data in all_persons.items() 
-            if p_data.get("total_duration", 0) >= 1.5
-        }
+        # Retain all detected tracks without duration filtering
+        persons = dict(all_persons)
 
         # Extract entry and exit keyframes (and behavior clip) for each detected person
         for p_id, p_data in persons.items():
@@ -356,6 +375,10 @@ class VideoProcessor:
         # are decided by the VLM from the keyframes. Severity is NOT derived
         # from the ReID count anymore -- the VLM is the single source of truth.
         # ------------------------------------------------------------------
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         print("\n" + "=" * 70)
         print("[VLM THREAT ANALYSIS] Assessing description/action/severity via VLM...")
         print("=" * 70)
