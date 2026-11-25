@@ -17,8 +17,8 @@ DEFAULT_TRACKER_CONFIG = os.path.join(os.path.dirname(__file__), "bytetrack.yaml
 # Eliminates background clutter and road markings while preserving small/distant drones
 DEFAULT_CLASS_THRESHOLDS = {
     "drone":   {"conf": 0.25, "min_w": 8,  "min_h": 8,  "min_area": 50},
-    "person":  {"conf": 0.50, "min_w": 18, "min_h": 30, "min_area": 450},
-    "vehicle": {"conf": 0.55, "min_w": 28, "min_h": 22, "min_area": 650},
+    "person":  {"conf": 0.45, "min_w": 18, "min_h": 30, "min_area": 450},
+    "vehicle": {"conf": 0.50, "min_w": 28, "min_h": 22, "min_area": 650},
 }
 
 

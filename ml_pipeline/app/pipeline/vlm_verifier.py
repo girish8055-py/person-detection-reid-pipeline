@@ -172,3 +172,43 @@ def verify_object_class(
             f"({exc}), keeping '{fallback_class}'"
         )
         return fallback_class
+
+
+def ensure_ollama_model(model_name: str = "qwen2.5vl:7b", ollama_host: str = "http://localhost:11434") -> bool:
+    """
+    Check if the requested VLM model exists in Ollama.
+    If missing, automatically pull/download it once via Ollama API.
+    Once downloaded, skips subsequent pulls so it does not download again and again.
+    """
+    clean_host = ollama_host.rstrip("/api/generate").rstrip("/api/").rstrip("/")
+    tags_url = f"{clean_host}/api/tags"
+    pull_url = f"{clean_host}/api/pull"
+
+    try:
+        res = requests.get(tags_url, timeout=10)
+        if res.status_code == 200:
+            models_data = res.json().get("models", [])
+            installed_names = [m.get("name", "") for m in models_data]
+            installed_bases = [m.get("name", "").split(":")[0] for m in models_data]
+
+            target_base = model_name.split(":")[0]
+            if model_name in installed_names or target_base in installed_bases:
+                logger.info("[VLM INIT] Model '%s' is already installed in Ollama. Ready.", model_name)
+                print(f"[VLM INIT] Model '{model_name}' is already installed in Ollama. Ready.")
+                return True
+
+        logger.info("[VLM INIT] Model '%s' not found in Ollama. Automatically pulling/downloading now...", model_name)
+        print(f"[VLM INIT] Model '{model_name}' not found. Downloading via Ollama API (this happens only once)...")
+
+        pull_res = requests.post(pull_url, json={"name": model_name, "stream": False}, timeout=1800)
+        if pull_res.status_code == 200:
+            logger.info("[VLM INIT] Successfully downloaded model '%s' in Ollama.", model_name)
+            print(f"[VLM INIT] Successfully downloaded model '{model_name}' in Ollama.")
+            return True
+        else:
+            logger.warning("[VLM INIT] Pull request returned status %s: %s", pull_res.status_code, pull_res.text)
+    except Exception as exc:
+        logger.warning("[VLM INIT] Failed to verify or pull Ollama model '%s': %s", model_name, exc)
+        print(f"[VLM INIT] Note: Could not auto-check/pull model '{model_name}': {exc}")
+    return False
+

@@ -15,6 +15,7 @@ import threading
 import time
 
 from pipeline.video_processor import VideoProcessor
+from pipeline.vlm_verifier import ensure_ollama_model
 from worker.worker import start_worker
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -80,6 +81,12 @@ processing_lock = threading.Lock()  # ensures only one video processes at a time
 
 if __name__ == "__main__":
     logger.info("Starting Automatic Multi-Server Pipeline Worker...")
+    # Ensure VLM model is downloaded in Ollama (checks tags first; pulls only if missing)
+    try:
+        ensure_ollama_model("qwen2.5vl:7b")
+    except Exception as e:
+        logger.warning("VLM model check skipped or failed: %s", e)
+
     current_module = sys.modules[__name__]
     start_worker(current_module)
 

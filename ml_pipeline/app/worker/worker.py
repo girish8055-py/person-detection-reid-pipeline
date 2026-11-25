@@ -577,11 +577,15 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
                         if os.path.exists(alt_dir2):
                             person_dir = alt_dir2
                 
+                # Evidence Upload Policy:
+                # ONLY images that have been verified by the VLM (prefixed with vlm_verified)
+                # are uploaded and sent as evidence to the admin.
+                cls_slug = det_cls.lower()
                 evidence_items = [
-                    ("first_detection.jpg", f"{raw_person_id}_first_{time_str}.jpg"),
-                    ("middle_detection.jpg", f"{raw_person_id}_middle_{time_str}.jpg"),
-                    ("last_detection.jpg", f"{raw_person_id}_last_{time_str}.jpg"),
-                    ("best_detection.jpg", f"{raw_person_id}_{time_str}.jpg"),
+                    (f"vlm_verified_{cls_slug}_first.jpg", f"{raw_person_id}_first_{time_str}.jpg"),
+                    (f"vlm_verified_{cls_slug}_middle.jpg", f"{raw_person_id}_middle_{time_str}.jpg"),
+                    (f"vlm_verified_{cls_slug}_last.jpg", f"{raw_person_id}_last_{time_str}.jpg"),
+                    (f"vlm_verified_{cls_slug}_best.jpg", f"{raw_person_id}_{time_str}.jpg"),
                 ]
                 
                 uploaded_evidence_map = {}
@@ -592,8 +596,18 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
 
                 for src_name, target_dest_name in evidence_items:
                     src_file = os.path.join(person_dir, src_name)
+                    # If vlm_verified with class slug is not found, check generic vlm_verified
                     if not os.path.exists(src_file):
-                        continue
+                        # Fallback to any vlm_verified matching prefix
+                        found = False
+                        if os.path.exists(person_dir):
+                            for fname in os.listdir(person_dir):
+                                if fname.startswith("vlm_verified_") and src_name.split("_")[-1] in fname:
+                                    src_file = os.path.join(person_dir, fname)
+                                    found = True
+                                    break
+                        if not found or not os.path.exists(src_file):
+                            continue
 
                     dest_file = os.path.join(person_dir, target_dest_name)
                     if src_file != dest_file:
@@ -619,6 +633,10 @@ def worker_loop(app_module, server_name="Auto Server Queue", base_url=None):
                             base_url=base_url
                         )
                         key_name = src_name.replace(".jpg", "")
+                        for suffix in ["first", "middle", "last", "best"]:
+                            if suffix in src_name:
+                                key_name = f"{suffix}_detection"
+                                break
                         uploaded_evidence_map[key_name] = {
                             "file_name": target_dest_name,
                             "file_size": f_sz,
