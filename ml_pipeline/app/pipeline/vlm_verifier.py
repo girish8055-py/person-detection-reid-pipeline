@@ -81,26 +81,31 @@ def verify_object_class(
 
     clean_fallback = str(fallback_class).lower().strip() if fallback_class else "person"
 
-    # Build exact allowed set from model classes or default
+    # Permitted classes sent to the VLM:
+    # allowed_classes = ["drone", "person", "vehicle", "background", "noise"]
     if allowed_classes:
         valid_set = set(str(c).lower().strip() for c in allowed_classes)
     else:
-        valid_set = {"person", "vehicle", "drone"}
+        valid_set = {"drone", "person", "vehicle"}
 
     if clean_fallback:
         valid_set.add(clean_fallback)
 
+    valid_set.update({"background", "noise"})
+
     valid_list_str = ", ".join([f'"{c}"' for c in sorted(valid_set)])
 
+    # VLM Prompt Directive:
     prompt = (
-        "You are an aerial surveillance image classifier and verifier.\n"
+        "You are an aerial surveillance image classifier, verifier, and false-positive filter.\n"
         "Look closely at the keyframe image(s) below showing a detected subject from an aerial video.\n\n"
         "YOUR CRITICAL MISSION:\n"
-        f"Verify the visual classification of the object (detector labeled it as '{clean_fallback}').\n"
-        f"You MUST classify the object into EXACTLY ONE of the model's supported classes: [{valid_list_str}].\n\n"
+        f"Verify the visual classification of the object (detector tentatively labeled it as '{clean_fallback}').\n"
+        f"You MUST classify the object into EXACTLY ONE of the supported classes: [{valid_list_str}].\n\n"
         "CRITICAL INSTRUCTIONS:\n"
         "  - Examine the visual shape and features of the target object in the frame.\n"
         "  - Base your classification strictly on the true physical shape of the subject.\n"
+        "  - If the image shows only empty ground, grass, rocks, tree branches, shadows, road markings, or noise without any person, vehicle, or drone, classify as 'background'.\n"
         f"  - Do NOT invent outside classes. Your response MUST be one of: [{valid_list_str}].\n\n"
         "Respond with ONLY a JSON object:\n"
         '{"classification": "<one_of_the_supported_classes>"}'

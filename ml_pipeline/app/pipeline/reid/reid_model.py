@@ -49,7 +49,20 @@ class UniversalReIDExtractor:
         self.model = timm.create_model(
             "convnext_base", pretrained=True, num_classes=0
         )
-        self.model.to(self.device)
+        try:
+            self.model.to(self.device)
+        except RuntimeError as oom_err:
+            if "out of memory" in str(oom_err).lower() and self.device.type == "cuda":
+                logger.warning(
+                    "CUDA VRAM constrained by background services; falling back ConvNeXt ReID to CPU: %s",
+                    oom_err,
+                )
+                print(f"[REID ENGINE] Note: CUDA VRAM is full; running ConvNeXt ReID smoothly on CPU.")
+                self.device = torch.device("cpu")
+                self.model.to(self.device)
+            else:
+                raise oom_err
+
         self.model.eval()
         self.embedding_dim = 1024  # ConvNeXt-Base GAP output dimension
 

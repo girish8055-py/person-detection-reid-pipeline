@@ -179,7 +179,7 @@ class VideoProcessor:
         total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
         skip_interval = max(1, int(video_fps / self.target_fps))
 
-        # Prepare VideoWriter to save detection video with bounding boxes
+        # Prepare VideoWriter to save initial detection video with bounding boxes
         annotated_video_path = os.path.join(output_folder, "detection_annotated.mp4")
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         video_writer = cv2.VideoWriter(annotated_video_path, fourcc, video_fps, (width, height))
@@ -338,8 +338,26 @@ class VideoProcessor:
 
         all_persons = person_manager.get_persons()
         
-        # Retain all detected tracks without duration filtering
-        persons = dict(all_persons)
+        # Step 2: Per-Class Temporal Duration Gate
+        # Real drones move fast across frames -> min duration 0.25s
+        # Persons and vehicles persist -> min duration 1.0s / 1.2s to eliminate 1-frame glitches
+        MIN_DURATIONS = {
+            "drone": 0.25,
+            "person": 1.00,
+            "vehicle": 1.20,
+        }
+        persons = {}
+        for p_id, p_data in all_persons.items():
+            obj_cls = p_data.get("class", "person")
+            req_dur = MIN_DURATIONS.get(obj_cls, 1.00)
+            dur = p_data.get("total_duration", 0)
+            if dur >= req_dur:
+                persons[p_id] = p_data
+            else:
+                logger.info(
+                    "Filtered out short track %s (class=%s, duration=%.2fs < %.2fs)",
+                    p_id, obj_cls, dur, req_dur
+                )
 
         # Extract entry and exit keyframes (and behavior clip) for each detected person
         for p_id, p_data in persons.items():
@@ -387,6 +405,10 @@ class VideoProcessor:
 
         model_classes = self.detector.get_model_classes() if self.detector else None
 
+        # Track objects rejected by VLM as background or noise
+        rejected_target_ids = set()
+        final_persons = {}
+
         if not persons:
             print("[VLM THREAT ANALYSIS] No tracked objects detected in this video to analyze.")
         for p_id, p_data in persons.items():
@@ -400,8 +422,40 @@ class VideoProcessor:
                 fallback_class=p_data.get("class", "person"),
                 allowed_classes=model_classes
             )
+            # Step 4: VLM Negative Rejection Gate - Purge evidence folder if rejected
+            if verified_class in ("background", "noise"):
+                logger.info("[VLM REJECT] Target %s rejected as %s by VLM.", p_id, verified_class)
+                print(f"[VLM REJECT] Target {p_id} rejected as '{verified_class}' by VLM — discarding.")
+                rejected_target_ids.add(p_id)
+                # Purge raw evidence folder for rejected target so no non-verified evidence remains
+                raw_folder = os.path.join(output_folder, str(p_id).lower())
+                if os.path.isdir(raw_folder):
+                    import shutil
+                    shutil.rmtree(raw_folder, ignore_errors=True)
+                continue
+
             if verified_class:
                 p_data["class"] = verified_class
+
+            # Save / Rename evidence frames for VLM-verified targets only:
+            # Name format: vlm_verified_<class>_first.jpg, vlm_verified_<class>_best.jpg, vlm_verified_<class>_last.jpg
+            target_ev_folder = os.path.join(output_folder, str(p_id).lower())
+            if os.path.isdir(target_ev_folder):
+                cls_slug = verified_class.lower()
+                evidence_renames = {
+                    "first_detection.jpg": f"vlm_verified_{cls_slug}_first.jpg",
+                    "middle_detection.jpg": f"vlm_verified_{cls_slug}_middle.jpg",
+                    "best_detection.jpg": f"vlm_verified_{cls_slug}_best.jpg",
+                    "last_detection.jpg": f"vlm_verified_{cls_slug}_last.jpg",
+                }
+                for old_f, new_f in evidence_renames.items():
+                    src_p = os.path.join(target_ev_folder, old_f)
+                    dst_p = os.path.join(target_ev_folder, new_f)
+                    if os.path.isfile(src_p):
+                        try:
+                            os.rename(src_p, dst_p)
+                        except Exception as e:
+                            logger.warning("Could not rename evidence %s to %s: %s", src_p, dst_p, e)
 
             pseudo_result = {
                 "id_number": str(p_id),
@@ -435,6 +489,18 @@ class VideoProcessor:
                 f"[VLM ANALYSIS] Target {p_id} ({p_data['class']}): "
                 f"Severity = Level {sev_level} ({sev_label}) | Action = {p_data['suggest_action']}"
             )
+            final_persons[p_id] = p_data
+
+        persons = final_persons
+
+        print("=" * 70 + "\n")
+
+        json_writer.write(persons)
+
+        # ------------------------------------------------------------------
+        # End of VLM Threat Analysis
+        # ------------------------------------------------------------------
+        persons = final_persons
 
         print("=" * 70 + "\n")
 
@@ -488,7 +554,7 @@ def extract_behavior_clip_and_keyframes(video_path: str, best_time: float, fps: 
     end_frame = int(end_time * fps)
 
     pid_str = str(person_id).lower()
-    folder_name = pid_str if pid_str.startswith(("person_", "vehicle_")) else f"person_{pid_str}"
+    folder_name = pid_str if any(pid_str.startswith(p) for p in ("person_", "vehicle_", "drone_")) else f"target_{pid_str}"
     person_folder = os.path.join(output_folder, folder_name)
     os.makedirs(person_folder, exist_ok=True)
 

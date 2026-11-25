@@ -13,6 +13,14 @@ from ultralytics import YOLO
 
 DEFAULT_TRACKER_CONFIG = os.path.join(os.path.dirname(__file__), "bytetrack.yaml")
 
+# Class-specific confidence and bounding box geometry filters
+# Eliminates background clutter and road markings while preserving small/distant drones
+DEFAULT_CLASS_THRESHOLDS = {
+    "drone":   {"conf": 0.25, "min_w": 8,  "min_h": 8,  "min_area": 50},
+    "person":  {"conf": 0.50, "min_w": 18, "min_h": 30, "min_area": 450},
+    "vehicle": {"conf": 0.55, "min_w": 28, "min_h": 22, "min_area": 650},
+}
+
 
 def normalize_class(name: str) -> str:
     return str(name).lower().strip()
@@ -27,21 +35,26 @@ class PersonDetector:
         min_box_width: int = 0,
         min_box_height: int = 0,
         min_box_area: int = 0,
+        class_thresholds: dict = None,
     ):
         """
         Initialize YOLO model.
 
         Args:
             model_path: Path to YOLO model.
-            confidence: Detection confidence threshold.
+            confidence: Base detection confidence threshold (lowest threshold for model.track).
             tracker: ByteTrack configuration file.
-            min_box_width: Minimum allowed bounding box width in pixels (0 = no filter).
-            min_box_height: Minimum allowed bounding box height in pixels (0 = no filter).
-            min_box_area: Minimum allowed bounding box area in sq pixels (0 = no filter).
+            min_box_width: Global fallback minimum bounding box width in pixels.
+            min_box_height: Global fallback minimum bounding box height in pixels.
+            min_box_area: Global fallback minimum bounding box area in sq pixels.
+            class_thresholds: Dict mapping class names to {conf, min_w, min_h, min_area}.
         """
 
         self.model = YOLO(model_path)
-        self.confidence = confidence
+        self.class_thresholds = class_thresholds or DEFAULT_CLASS_THRESHOLDS
+        # Model tracker runs with the lowest threshold across classes so no candidates are missed
+        min_conf = min(cfg.get("conf", confidence) for cfg in self.class_thresholds.values()) if self.class_thresholds else confidence
+        self.confidence = min_conf
         self.tracker = tracker or (DEFAULT_TRACKER_CONFIG if os.path.exists(DEFAULT_TRACKER_CONFIG) else "bytetrack.yaml")
         self.min_box_width = min_box_width
         self.min_box_height = min_box_height
@@ -65,17 +78,40 @@ class PersonDetector:
         """
 
         import torch
-        device = 0 if torch.cuda.is_available() else "cpu"
+        # Check if CUDA has sufficient free memory (>1GB) to allocate cuBLAS workspace
+        device = "cpu"
+        if torch.cuda.is_available():
+            try:
+                free_bytes, _ = torch.cuda.mem_get_info()
+                if free_bytes > 1024 * 1024 * 1024:
+                    device = 0
+            except Exception:
+                pass
         
-        results = self.model.track(
-            source=frame,
-            persist=True,
-            tracker=self.tracker,
-            conf=self.confidence,
-            iou=0.50,
-            device=device,
-            verbose=False
-        )
+        try:
+            results = self.model.track(
+                source=frame,
+                persist=True,
+                tracker=self.tracker,
+                conf=self.confidence,
+                iou=0.50,
+                device=device,
+                verbose=False
+            )
+        except RuntimeError as oom_cuda:
+            if "cuda" in str(oom_cuda).lower() and device != "cpu":
+                logger.warning("CUDA memory constrained; running tracker on CPU fallback: %s", oom_cuda)
+                results = self.model.track(
+                    source=frame,
+                    persist=True,
+                    tracker=self.tracker,
+                    conf=self.confidence,
+                    iou=0.50,
+                    device="cpu",
+                    verbose=False
+                )
+            else:
+                raise oom_cuda
 
         raw_detections = []
 
@@ -95,14 +131,26 @@ class PersonDetector:
                 class_id = int(box.cls.item())
                 names_dict = getattr(self.model, "names", getattr(result, "names", {}))
                 raw_class = names_dict.get(class_id, f"class_{class_id}") if isinstance(names_dict, dict) else f"class_{class_id}"
+                norm_class = normalize_class(raw_class)
+                conf = float(box.conf.item())
+
+                # Apply Per-Class Confidence and Geometry Filtering
+                class_rule = self.class_thresholds.get(norm_class, {})
+                req_conf = class_rule.get("conf", self.confidence)
+                req_min_w = class_rule.get("min_w", self.min_box_width)
+                req_min_h = class_rule.get("min_h", self.min_box_height)
+                req_min_area = class_rule.get("min_area", self.min_box_area)
+
+                if conf < req_conf or w < req_min_w or h < req_min_h or (w * h) < req_min_area:
+                    continue
 
                 raw_detections.append(
                     {
                         "track_id": track_id,
                         "bbox": [int(x1), int(y1), int(x2), int(y2)],
-                        "confidence": float(box.conf.item()),
+                        "confidence": conf,
                         "class_id": class_id,
-                        "class": normalize_class(raw_class)
+                        "class": norm_class
                     }
                 )
 

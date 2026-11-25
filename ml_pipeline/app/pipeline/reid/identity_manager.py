@@ -102,10 +102,14 @@ class IdentityManager:
         # gallery_arrays already filters by obj_class, but we double-check the
         # candidate's class after matching to enforce the hard class barrier.
         gallery_ids, gallery_embs = self.db.gallery_arrays(camera_id=camera_id, obj_class=obj_class)
+        # Determine class-specific similarity threshold
+        class_thresh_dict = getattr(self.cfg, "class_similarity_thresholds", {})
+        thresh = class_thresh_dict.get(obj_class, self.cfg.similarity_threshold) if obj_class else self.cfg.similarity_threshold
+
         candidate_id, score = best_match(
-            embedding, gallery_ids, gallery_embs, self.cfg.similarity_threshold
+            embedding, gallery_ids, gallery_embs, thresh
         )
-        logger.debug("Gallery search for tracker_id=%s: best_score=%.3f (threshold=%.2f)", tracker_id, score, self.cfg.similarity_threshold)
+        logger.debug("Gallery search for tracker_id=%s: best_score=%.3f (threshold=%.2f)", tracker_id, score, thresh)
 
         if candidate_id is not None:
             candidate_rec = self.db.get(candidate_id)

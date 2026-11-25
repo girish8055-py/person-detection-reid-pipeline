@@ -26,9 +26,16 @@ class ReIDConfig:
     use_fp16: bool = True  # safe on RTX 3050, halves VRAM + speeds up inference
 
     # ---------------- Matching ----------------
-    # 0.57 threshold tuned for ConvNeXt-Base aerial multi-class ReID.
-    # Higher value prevents cross-class confusion (drone vs vehicle from aerial view).
+    # 0.57 default threshold for ConvNeXt-Base aerial multi-class ReID.
     similarity_threshold: float = 0.57
+    # Per-class similarity thresholds:
+    # Vehicles have rigid structures and high visual consistency -> 0.48 prevents fragmentation across viewing angles
+    # Drones and persons maintain strict barriers
+    class_similarity_thresholds: dict = field(default_factory=lambda: {
+        "vehicle": 0.48,
+        "drone": 0.55,
+        "person": 0.57,
+    })
     # Soft margin allows a small buffer below the threshold for gating.
     soft_margin: float = 0.05
 
